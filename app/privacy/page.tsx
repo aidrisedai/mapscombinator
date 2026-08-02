@@ -4,7 +4,7 @@ import { SectionEyebrow } from "@/components/SectionEyebrow";
 
 export const metadata: Metadata = {
   title: "Privacy",
-  description: "Privacy practices for the MAPS Center website.",
+  description: "Privacy practices for the MAPS Combinator website.",
 };
 
 /**
@@ -18,7 +18,7 @@ export default function PrivacyPage() {
     <section className="mx-auto max-w-3xl px-5 py-16 md:py-24">
       <SectionEyebrow>Privacy</SectionEyebrow>
       <h1 className="font-display text-4xl font-bold text-forest">
-        Privacy at the MAPS Center
+        Privacy at MAPS Combinator
       </h1>
       <div className="mt-8 space-y-6 leading-relaxed text-ink/85">
         <p>
@@ -32,9 +32,9 @@ export default function PrivacyPage() {
             your work or interests.
           </li>
           <li>
-            We use that information solely to understand the founding
-            community and to send relevant updates you have consented to
-            receive.
+            We use that information solely to understand program demand,
+            coordinate contributions, and send relevant updates you have
+            consented to receive.
           </li>
           <li>We do not sell your information.</li>
           <li>
@@ -64,7 +64,7 @@ export default function PrivacyPage() {
         </ul>
         <p className="text-sm text-ink/60">
           A complete privacy policy will be published following legal review
-          before programs formally launch.
+          before the program formally launches.
         </p>
       </div>
     </section>

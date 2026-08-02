@@ -1,42 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { siteConfig } from "@/content/site";
+import { siteConfig, stageCopy } from "@/content/site";
 import { SectionEyebrow } from "@/components/SectionEyebrow";
 import { EthicsNotice } from "@/components/EthicsNotice";
-import { CombinatorInterestForm } from "@/components/CombinatorInterestForm";
 
 export const metadata: Metadata = {
-  title: "MAPS Combinator | 12-Week Equity-Free Early-Stage Incubator",
+  title: "The Program",
   description:
-    "A selective, evidence-driven early-stage incubator for Greater Seattle builders ready to validate a problem, build a useful product, and prepare for the right next stage.",
+    "The full MAPS Combinator program: weekly rhythm, what MAPS provides, venture standards, selection process, and how success is measured.",
 };
-
-const PARTICIPANT_WORK = [
-  {
-    title: "Define the problem and beachhead customer",
-    copy: "Identify a specific affected person, the context in which the problem occurs, existing alternatives, urgency, and the reason a new solution may deserve adoption.",
-  },
-  {
-    title: "Replace assumptions with evidence",
-    copy: "Conduct direct discovery, observe behavior, test willingness to act or pay, and record what changed in the team's understanding.",
-  },
-  {
-    title: "Build the smallest useful product",
-    copy: "Create an artifact that can generate learning: a prototype, workflow, service, pilot, technical proof, or working product.",
-  },
-  {
-    title: "Test adoption and distribution",
-    copy: "Put the product in front of real users. Test activation, repeat use, pricing, referrals, purchasing, partnerships, or another behavior appropriate to the venture.",
-  },
-  {
-    title: "Build an operating foundation",
-    copy: "Learn the basics of team agreements, ownership, intellectual property, incorporation choices, finance, responsible data use, and risk. Educational content is not legal, tax, or financial advice; professional referrals may be offered when available.",
-  },
-  {
-    title: "Make a clear next-stage decision",
-    copy: "At Demo Day, teams present the problem, evidence, product, learning, and next step. A responsible outcome may be continued bootstrapping, customer growth, an external accelerator, grant exploration, investment preparation, a pivot, or stopping an unsupported idea.",
-  },
-];
 
 const RHYTHM = [
   "Scheduled in-person build time",
@@ -66,10 +38,7 @@ const CONDITIONAL_BENEFITS = [
 ];
 
 const SELECTION_STEPS = [
-  {
-    title: "Interest form",
-    copy: "Basic fit and launch updates.",
-  },
+  { title: "Interest form", copy: "Basic fit and launch updates." },
   {
     title: "Application",
     copy: "Founder, problem, evidence, artifact, commitment, and ethical considerations.",
@@ -94,101 +63,32 @@ const SUCCESS_MEASURES = [
   "Participant quality, safety, and ethical decision-making",
 ];
 
-export default function CombinatorPage() {
-  const applyCta = siteConfig.combinatorApplicationsOpen
-    ? {
-        label: "Apply to the Pilot Cohort",
-        href: siteConfig.combinatorApplicationUrl ?? "#interest",
-      }
-    : { label: "Join the Interest List", href: "#interest" };
-
+export default function ProgramPage() {
   return (
     <>
       {/* Hero */}
       <section className="bg-forest text-cream">
         <div className="mx-auto max-w-6xl px-5 py-16 md:py-24">
           <p className="inline-block rounded-full border border-moss/50 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-moss">
-            12-week pilot · Equity-free · Status:{" "}
-            {siteConfig.combinatorStatus}
+            12-week pilot · Equity-free · Status: {siteConfig.combinatorStatus}
           </p>
           <h1 className="mt-6 max-w-3xl font-display text-4xl font-bold leading-tight md:text-5xl">
             Stop polishing the idea. Start testing what must be true.
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-relaxed text-cream/90">
-            MAPS Combinator is a selective early-stage incubator for builders
-            prepared to turn a meaningful problem into evidence, a tested
-            product, and a clear next-stage decision. It is not an accelerator,
-            investment fund, or startup theater.
+            This page states exactly what the program involves, what MAPS
+            provides, how teams are selected, and how success is measured — so
+            applicants, mentors, and partners know precisely what they are
+            committing to.
           </p>
           <div className="mt-9">
             <Link
-              href={applyCta.href}
+              href={stageCopy.primaryCta.href}
               className="inline-block rounded-full bg-cream px-7 py-3.5 font-semibold text-forest transition-colors hover:bg-paper"
             >
-              {applyCta.label}
+              {stageCopy.primaryCta.label}
             </Link>
           </div>
-        </div>
-      </section>
-
-      {/* Who it is for */}
-      <section className="mx-auto max-w-6xl px-5 py-16 md:py-20">
-        <div className="grid gap-10 lg:grid-cols-2">
-          <div>
-            <h2 className="font-display text-3xl font-bold text-forest">
-              Who it is for
-            </h2>
-            <p className="mt-5 leading-relaxed text-ink/85">
-              The pilot is designed primarily for university seniors, recent
-              graduates, early-career professionals, and other serious
-              early-stage builders in Greater Seattle. Applicants may be
-              technical or nontechnical, solo or part of a team, but they must
-              show evidence of action and the capacity to meet the cohort
-              commitment.
-            </p>
-          </div>
-          <div>
-            <h2 className="font-display text-3xl font-bold text-forest">
-              Evidence of action
-            </h2>
-            <p className="mt-5 leading-relaxed text-ink/85">
-              The program does not admit applicants based on ideas and
-              enthusiasm alone. Strong applications include a relevant artifact
-              or evidence: a prototype, customer interviews, early usage, a
-              service delivered manually, preorders, letters of intent, a
-              technical experiment, a problem research ledger, or another
-              credible sign that the applicant has begun learning through
-              action.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* What participants do */}
-      <section className="bg-cream/60 py-16 md:py-20">
-        <div className="mx-auto max-w-6xl px-5">
-          <SectionEyebrow>The work</SectionEyebrow>
-          <h2 className="font-display text-3xl font-bold text-forest">
-            What participants do
-          </h2>
-          <ol className="mt-10 grid gap-6 md:grid-cols-2">
-            {PARTICIPANT_WORK.map((item, i) => (
-              <li
-                key={item.title}
-                className="rounded-lg border border-line bg-paper p-7"
-              >
-                <span className="font-display text-xl font-bold text-emerald">
-                  {String(i + 1).padStart(2, "0")}
-                </span>
-                <h3 className="mt-2 font-display text-xl font-bold text-forest">
-                  {item.title}
-                </h3>
-                <p className="mt-3 text-sm leading-relaxed text-ink/85">
-                  {item.copy}
-                </p>
-              </li>
-            ))}
-          </ol>
         </div>
       </section>
 
@@ -196,6 +96,7 @@ export default function CombinatorPage() {
       <section className="mx-auto max-w-6xl px-5 py-16 md:py-20">
         <div className="grid gap-10 lg:grid-cols-2">
           <div>
+            <SectionEyebrow>The commitment</SectionEyebrow>
             <h2 className="font-display text-3xl font-bold text-forest">
               Weekly operating rhythm
             </h2>
@@ -264,18 +165,18 @@ export default function CombinatorPage() {
         </div>
       </section>
 
-      {/* Ethics */}
+      {/* Venture standards */}
       <section className="mx-auto max-w-6xl px-5 py-16 md:py-20">
         <h2 className="font-display text-3xl font-bold text-forest">
-          Ethics and venture standards
+          Venture standards
         </h2>
         <p className="mt-5 max-w-2xl leading-relaxed text-ink/85">
           Participating ventures must align with MAPS community standards and
-          Islamic ethical guardrails. The program will not support businesses
-          centered on gambling, predatory or interest-based financial
-          practices, deception, exploitation, pornography, harmful
-          surveillance, illegal activity, or products whose foreseeable harms
-          fundamentally outweigh their benefit.
+          ethical guardrails. The program will not support businesses centered
+          on gambling, predatory or interest-based financial practices,
+          deception, exploitation, pornography, harmful surveillance, illegal
+          activity, or products whose foreseeable harms fundamentally outweigh
+          their benefit.
         </p>
         <div className="mt-6 max-w-2xl">
           <EthicsNotice title="Fair review">
@@ -339,32 +240,17 @@ export default function CombinatorPage() {
             Participation does not guarantee company formation, product
             success, customers, revenue, grants, investment, credits,
             introductions, or continued facility access. Program details and
-            benefits may change before the cohort opens.
+            benefits may change before the cohort opens. Educational content is
+            not legal, tax, or financial advice.
           </EthicsNotice>
         </div>
-      </section>
-
-      {/* Interest form */}
-      <section id="interest" className="scroll-mt-24 bg-cream/70 py-16 md:py-24">
-        <div className="mx-auto max-w-3xl px-5">
-          <SectionEyebrow>
-            {siteConfig.combinatorApplicationsOpen
-              ? "Applications are open"
-              : "Interest list"}
-          </SectionEyebrow>
-          <h2 className="font-display text-3xl font-bold text-forest">
-            {siteConfig.combinatorApplicationsOpen
-              ? "Start your application"
-              : "Be first to know when applications open"}
-          </h2>
-          <p className="mt-4 leading-relaxed text-ink/85">
-            Tell us where you are today. We will send program updates —
-            including the cohort timeline and application details — as they are
-            confirmed.
-          </p>
-          <div className="mt-10 rounded-lg border border-line bg-paper p-7 md:p-9">
-            <CombinatorInterestForm />
-          </div>
+        <div className="mt-10">
+          <Link
+            href={stageCopy.primaryCta.href}
+            className="inline-block rounded-full bg-forest px-7 py-3.5 font-semibold text-paper transition-colors hover:bg-emerald"
+          >
+            {stageCopy.primaryCta.label}
+          </Link>
         </div>
       </section>
     </>

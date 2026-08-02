@@ -3,7 +3,7 @@ import { SectionEyebrow } from "@/components/SectionEyebrow";
 
 export const metadata: Metadata = {
   title: "Terms",
-  description: "Terms of use for the MAPS Center website.",
+  description: "Terms of use for the MAPS Combinator website.",
 };
 
 /**
@@ -20,13 +20,13 @@ export default function TermsPage() {
       </h1>
       <div className="mt-8 space-y-6 leading-relaxed text-ink/85">
         <p>
-          This website describes an initiative that is in a planning stage.
-          Please read these points before relying on anything published here:
+          This website describes a program that is in a planning stage. Please
+          read these points before relying on anything published here:
         </p>
         <ul className="list-disc space-y-3 pl-6">
           <li>
             Program descriptions, statuses, and benefits reflect current
-            planning and may change before any program formally opens.
+            planning and may change before the program formally opens.
           </li>
           <li>
             Nothing on this site is legal, tax, financial, or investment
@@ -34,9 +34,8 @@ export default function TermsPage() {
             information only.
           </li>
           <li>
-            Participation in any future program does not guarantee funding,
-            customers, company formation, credits, introductions, or any
-            specific outcome.
+            Participation in the program does not guarantee funding, customers,
+            company formation, credits, introductions, or any specific outcome.
           </li>
           <li>
             Ventures that may be described on this site are independently
@@ -49,8 +48,8 @@ export default function TermsPage() {
           </li>
         </ul>
         <p className="text-sm text-ink/60">
-          Complete terms will be published following legal review before
-          programs formally launch.
+          Complete terms will be published following legal review before the
+          program formally launches.
         </p>
       </div>
     </section>

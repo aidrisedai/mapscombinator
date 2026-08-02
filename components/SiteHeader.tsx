@@ -2,16 +2,11 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { siteConfig, stageCopy } from "@/content/site";
+import { stageCopy } from "@/content/site";
 
 const NAV_LINKS = [
-  { label: "About", href: "/about" },
-  { label: "Programs", href: "/programs" },
-  // Events and Built Here join the nav only once real content exists.
-  ...(siteConfig.eventsEnabled ? [{ label: "Events", href: "/events" }] : []),
-  ...(siteConfig.builderDirectoryEnabled
-    ? [{ label: "Built Here", href: "/builders" }]
-    : []),
+  { label: "How It Works", href: "/#how-it-works" },
+  { label: "The Program", href: "/program" },
   { label: "Get Involved", href: "/get-involved" },
   { label: "Contact", href: "/contact" },
 ];
@@ -40,10 +35,10 @@ export function SiteHeader() {
           onClick={() => setMenuOpen(false)}
         >
           <span className="block font-display text-xl font-bold tracking-tight text-forest">
-            MAPS
+            MAPS Combinator
           </span>
           <span className="block text-[0.6rem] font-semibold uppercase tracking-[0.18em] text-ink/80">
-            Center for Entrepreneurship &amp; Innovation
+            12-week equity-free incubator · Greater Seattle
           </span>
         </Link>
 

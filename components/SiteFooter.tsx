@@ -9,16 +9,13 @@ export function SiteFooter() {
       <div className="relative mx-auto max-w-6xl px-5 py-14">
         <div className="grid gap-10 md:grid-cols-3">
           <div>
-            <p className="font-display text-lg font-bold">
-              MAPS Center for Entrepreneurship &amp; Innovation
+            <p className="font-display text-lg font-bold">MAPS Combinator</p>
+            <p className="mt-2 text-sm text-cream/80">
+              A 12-week, equity-free early-stage incubator
+              {siteConfig.isFormalMapsInitiative
+                ? " — a program of MAPS"
+                : " in development"}
             </p>
-            {siteConfig.isFormalMapsInitiative ? (
-              <p className="mt-2 text-sm text-cream/80">An initiative of MAPS</p>
-            ) : (
-              <p className="mt-2 text-sm text-cream/80">
-                A community initiative in development
-              </p>
-            )}
             <p className="mt-4 text-sm text-cream/80">
               {siteConfig.physicalAddress ?? siteConfig.locationLabel}
             </p>
@@ -27,18 +24,8 @@ export function SiteFooter() {
           <nav aria-label="Footer" className="text-sm">
             <ul className="space-y-2">
               <li>
-                <Link href="/about" className="hover:text-moss">
-                  About
-                </Link>
-              </li>
-              <li>
-                <Link href="/programs" className="hover:text-moss">
-                  Programs
-                </Link>
-              </li>
-              <li>
-                <Link href="/events" className="hover:text-moss">
-                  Events
+                <Link href="/program" className="hover:text-moss">
+                  The Program
                 </Link>
               </li>
               <li>
@@ -102,8 +89,7 @@ export function SiteFooter() {
         </div>
 
         <p className="mt-12 border-t border-cream/20 pt-6 text-xs text-cream/70">
-          © {new Date().getFullYear()} MAPS Center for Entrepreneurship &amp;
-          Innovation. All rights reserved.
+          © {new Date().getFullYear()} MAPS Combinator. All rights reserved.
         </p>
       </div>
     </footer>

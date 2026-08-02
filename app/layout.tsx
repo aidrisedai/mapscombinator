@@ -17,15 +17,16 @@ const outfit = Outfit({
 
 export const metadata: Metadata = {
   title: {
-    default: "MAPS Center for Entrepreneurship & Innovation | Greater Seattle",
-    template: "%s | MAPS Center for Entrepreneurship & Innovation",
+    default: "MAPS Combinator | 12-Week Equity-Free Incubator in Greater Seattle",
+    template: "%s | MAPS Combinator",
   },
   description:
-    "A home for Muslim builders in Greater Seattle. Meet collaborators, develop practical skills, build useful ventures, and strengthen the community.",
+    "MAPS Combinator is a selective, 12-week, equity-free early-stage incubator in Greater Seattle. Teams validate a real problem, build and test a useful product, and create ventures that serve their local communities.",
   openGraph: {
-    siteName: "MAPS Center for Entrepreneurship & Innovation",
-    title: "MAPS Center for Entrepreneurship & Innovation",
-    description: "A home for Muslim builders in Greater Seattle.",
+    siteName: "MAPS Combinator",
+    title: "MAPS Combinator",
+    description:
+      "A 12-week, equity-free early-stage incubator building ventures that serve Greater Seattle communities.",
     type: "website",
   },
 };

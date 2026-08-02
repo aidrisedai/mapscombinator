@@ -2,46 +2,41 @@ import type { SiteConfig } from "./types";
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
- * CENTRAL TRUTH CONTROLS
+ * CENTRAL TRUTH CONTROLS — MAPS COMBINATOR
+ *
+ * This site presents ONE program: MAPS Combinator. Messaging for the broader
+ * MAPS Center for Entrepreneurship & Innovation is owned by a separate team
+ * and intentionally not represented here.
  *
  * This file is the single source of truth for the site's launch state.
  * An authorized editor changes statuses HERE — pages and components react.
  *
  * How to move stages:
- *  - Board approves the center      → launchStatus: "approved"
- *  - Programs actually operating    → launchStatus: "live"
+ *  - Program approved by MAPS       → launchStatus: "approved"
+ *  - Cohort actually operating      → launchStatus: "live"
  *  - Naming/governance approved     → isFormalMapsInitiative: true
- *  - Combinator applications open   → combinatorApplicationsOpen: true and
- *                                     set combinatorApplicationUrl
- *  - First verified events exist    → eventsEnabled: true and add them in
- *                                     content/events.ts
- *  - Two+ verified venture profiles → builderDirectoryEnabled: true and add
- *                                     them in content/ventures.ts
+ *  - Applications open              → combinatorApplicationsOpen: true,
+ *                                     combinatorStatus: "Open", and set
+ *                                     combinatorApplicationUrl
  *
  * TODO_CONFIRM items (never expose this token publicly — the site renders a
  * safe fallback or hides the element instead):
- *  - TODO_CONFIRM: formal board approval status
+ *  - TODO_CONFIRM: formal approval status of the program
  *  - TODO_CONFIRM: permitted use of the MAPS name and official logo assets
  *  - TODO_CONFIRM: public contact email (currently the project owner's email)
- *  - TODO_CONFIRM: physical address and whether it may be published
- *  - TODO_CONFIRM: accountable program lead and oversight body
- *  - TODO_CONFIRM: domain name
+ *  - TODO_CONFIRM: cohort dates, capacity, schedule, and selection owner
+ *  - TODO_CONFIRM: facility details and whether they may be published
  * ─────────────────────────────────────────────────────────────────────────────
  */
 export const siteConfig: SiteConfig = {
   launchStatus: "planning",
-  officialName: "MAPS Center for Entrepreneurship & Innovation",
-  shortName: "MAPS Center",
+  officialName: "MAPS Combinator",
+  shortName: "MAPS Combinator",
   isFormalMapsInitiative: false,
   contactEmail: "abdulazeezidris28@gmail.com",
   locationLabel: "Greater Seattle, Washington",
   combinatorStatus: "Interest List",
   combinatorApplicationsOpen: false,
-  communityFormEnabled: true,
-  eventsEnabled: false,
-  builderDirectoryEnabled: false,
-  eirProgramEnabled: false,
-  opportunitiesEnabled: false,
   // formEndpoint: "https://…" — set to a vetted form service or API endpoint
   // to switch forms from the email fallback to direct submission.
   verifiedMetrics: [],
@@ -52,14 +47,12 @@ export const siteConfig: SiteConfig = {
 export const stageCopy = {
   heroEyebrow:
     siteConfig.launchStatus === "planning"
-      ? "A new initiative being developed at MAPS"
-      : "Rooted at MAPS · Built for Greater Seattle",
-  aboutIntroVerb:
-    siteConfig.launchStatus === "live" ? "is" : "is being developed as",
+      ? "A new program being developed at MAPS · Greater Seattle"
+      : "A MAPS program · Greater Seattle",
   primaryCta: siteConfig.combinatorApplicationsOpen
-    ? { label: "Apply to MAPS Combinator", href: "/programs/combinator" }
-    : { label: "Join the Founding Community", href: "/get-involved#join" },
-  secondaryCta: siteConfig.combinatorApplicationsOpen
-    ? { label: "Join the Community", href: "/get-involved#join" }
-    : { label: "See How It Works", href: "/#how-it-works" },
+    ? {
+        label: "Apply to MAPS Combinator",
+        href: siteConfig.combinatorApplicationUrl ?? "/#interest",
+      }
+    : { label: "Join the Interest List", href: "/#interest" },
 };

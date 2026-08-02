@@ -5,8 +5,7 @@ import { SectionEyebrow } from "@/components/SectionEyebrow";
 
 export const metadata: Metadata = {
   title: "Contact",
-  description:
-    "Contact the MAPS Center for Entrepreneurship & Innovation in Greater Seattle.",
+  description: "Contact the MAPS Combinator team in Greater Seattle.",
 };
 
 export default function ContactPage() {
@@ -19,8 +18,8 @@ export default function ContactPage() {
             Reach the team.
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-relaxed text-ink/85">
-            Questions about the center, programs, partnership, or press — send
-            a note and we will route it to the right person.
+            Questions about MAPS Combinator, applying, partnership, or press —
+            send a note and we will route it to the right person.
           </p>
         </div>
       </section>
@@ -44,7 +43,7 @@ export default function ContactPage() {
             ) : (
               <p className="mt-3 leading-relaxed text-ink/85">
                 A public contact address is being finalized. In the meantime,
-                use the founding community form and we will follow up.
+                use the interest form on the homepage and we will follow up.
               </p>
             )}
             <p className="mt-6 text-sm text-ink/70">
@@ -57,9 +56,10 @@ export default function ContactPage() {
               Looking to participate?
             </h2>
             <p className="mt-3 leading-relaxed text-ink/85">
-              Builders, mentors, volunteers, partners, and sponsors each have a
-              focused path on the Get Involved page — that form reaches us with
-              the context we need to respond well.
+              Founders join the interest list on the homepage. Mentors, pilot
+              partners, volunteers, and sponsors have a focused path on the Get
+              Involved page — those forms reach us with the context we need to
+              respond well.
             </p>
             <Link
               href="/get-involved"
