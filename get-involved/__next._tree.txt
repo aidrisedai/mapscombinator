@@ -1,4 +1,4 @@
-:HL["/mapscombinator/_next/static/chunks/14ln3ybm7ds-6.css","style"]
+:HL["/mapscombinator/_next/static/chunks/093z5xgtnnujr.css","style"]
 :HL["/mapscombinator/_next/static/media/1b99372b3eaef0c8-s.p.1gsd1jahc5dg_.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
 :HL["/mapscombinator/_next/static/media/38df7484fe560b25-s.p.34k3f59fehpay.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
-0:{"tree":{"name":"","param":null,"prefetchHints":16,"slots":{"children":{"name":"get-involved","param":null,"prefetchHints":0,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":0,"slots":null}}}}},"staleTime":300,"buildId":"Sp1vgviTqlN49A5m75DZJ"}
+0:{"tree":{"name":"","param":null,"prefetchHints":16,"slots":{"children":{"name":"get-involved","param":null,"prefetchHints":0,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":0,"slots":null}}}}},"staleTime":300,"buildId":"6LXY1Nni_OwKZJu36ocnF"}
