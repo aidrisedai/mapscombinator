@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+/* MAPS Center design tokens — cream/paper grounds, ink type, forest anchors,
+   emerald accents. Verify WCAG AA contrast before changing. */
+:root {
+  --ink: #101512;
+  --forest: #123d2b;
+  --emerald: #1f7a52;
+  --moss: #8faf93;
+  --cream: #f5f0e6;
+  --paper: #fffdf8;
+  --sand: #d8c9ac;
+  --line: #c9c5ba;
+  --error: #a13d35;
+  --success: #236b46;
+}
+
+@theme inline {
+  --color-ink: var(--ink);
+  --color-forest: var(--forest);
+  --color-emerald: var(--emerald);
+  --color-moss: var(--moss);
+  --color-cream: var(--cream);
+  --color-paper: var(--paper);
+  --color-sand: var(--sand);
+  --color-line: var(--line);
+  --color-error: var(--error);
+  --color-success: var(--success);
+  --font-display: var(--font-libre), Georgia, "Times New Roman", serif;
+  --font-sans: var(--font-outfit), system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-outfit), system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+/* Visible focus for keyboard users */
+:focus-visible {
+  outline: 2px solid var(--emerald);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+::selection {
+  background: var(--emerald);
+  color: var(--paper);
+}
