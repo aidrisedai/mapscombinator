@@ -292,3 +292,27 @@ export async function getSession(actor: Account, cohortId: string, sessionId: st
     : [];
   return { access: a, session: s, history, localDate: localDateOf(s.starts_at, s.timezone), localTime: localTimeOf(s.starts_at, s.timezone) };
 }
+
+/** Every occurrence of a series (admin view, for series-wide actions). */
+export async function listSeriesOccurrences(actor: Account, cohortId: string, seriesId: string) {
+  await requireCohortAdmin(actor, cohortId);
+  return sql()`select id, series_position, starts_at, ends_at, timezone, state, title from office_hours_sessions
+               where series_id = ${seriesId} and cohort_id = ${cohortId} order by starts_at`;
+}
+
+/** Cohort mentors and administrators who can host a session. */
+export async function sessionHostOptions(actor: Account, cohortId: string) {
+  await requireCohortAdmin(actor, cohortId);
+  return sql()`select a.id, a.display_name, array_agg(distinct r.role) as roles from cohort_roles r
+               join accounts a on a.id = r.account_id and a.state = 'active'
+               where r.cohort_id = ${cohortId} and r.active and r.role in ('admin', 'mentor')
+               group by a.id, a.display_name order by a.display_name`;
+}
+
+/** Outbox counts for one session's notifications, by template and delivery state. */
+export async function sessionEmailCounts(actor: Account, cohortId: string, sessionId: string) {
+  await requireCohortAdmin(actor, cohortId);
+  return sql()`select template, state, count(*)::int as n from email_outbox
+               where related_type = 'office_hours_session' and related_id = ${sessionId} and cohort_id = ${cohortId}
+               group by template, state order by template, state`;
+}

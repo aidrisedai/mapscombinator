@@ -112,3 +112,21 @@ export async function listAnnouncementsForAdmin(actor: Account, cohortId: string
                join accounts a on a.id = n.author_id left join program_weeks w on w.id = n.week_id
                where n.cohort_id = ${cohortId} order by n.updated_at desc`;
 }
+
+export async function getAnnouncementForAdmin(actor: Account, cohortId: string, id: string) {
+  const a = await requireCohortAdmin(actor, cohortId);
+  if (!/^[0-9a-f-]{36}$/i.test(id)) throw notFound();
+  const [n] = await sql()`select n.*, a.display_name as author, u.display_name as updated_by_name, w.number as week_number from announcements n
+                          join accounts a on a.id = n.author_id join accounts u on u.id = n.updated_by left join program_weeks w on w.id = n.week_id
+                          where n.id = ${id} and n.cohort_id = ${cohortId}`;
+  if (!n) throw notFound();
+  return { access: a, announcement: n };
+}
+
+/** Outbox counts for one announcement's email copies, by delivery state. */
+export async function announcementEmailCounts(actor: Account, cohortId: string, id: string) {
+  await requireCohortAdmin(actor, cohortId);
+  return sql()`select state, count(*)::int as n from email_outbox
+               where related_type = 'announcement' and related_id = ${id} and cohort_id = ${cohortId}
+               group by state order by state`;
+}

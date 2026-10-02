@@ -33,6 +33,20 @@ export async function requireMentorManager(actor: Account, mentorId: string, db:
   return { self: false, cohorts: cohorts.filter((c) => adminIds.has(c.id)), adminCohortIds: adminIds };
 }
 
+/** Mentor identity + management scope for the mentor area (self or on behalf). */
+export async function getMentorContext(actor: Account, mentorId: string) {
+  if (!/^[0-9a-f-]{36}$/i.test(mentorId)) throw notFound("Mentor not found.");
+  const m = await requireMentorManager(actor, mentorId);
+  const [acc] = await sql()`select id, display_name, email from accounts where id = ${mentorId} and organization_id = ${actor.organizationId}`;
+  if (!acc) throw notFound("Mentor not found.");
+  const profile = await getMentorProfile(mentorId);
+  return {
+    ...m,
+    mentor: { id: acc.id as string, displayName: acc.display_name as string, email: acc.email as string },
+    profile,
+  };
+}
+
 // ───────────────────────────── Profile ─────────────────────────────────────
 
 const profileSchema = z.object({

@@ -96,7 +96,7 @@ export async function requestPasswordReset(emailInput: string, ip: string) {
     to: e,
     recipientAccountId: acct.id,
     payload: { org: org?.name, support: org?.supportEmail },
-    secret: { link: `${env().APP_URL}/auth/confirm?type=recovery&token_hash=${encodeURIComponent(tokenHash)}` },
+    secret: { link: `${env().APP_URL}/auth/confirm#type=recovery&token_hash=${encodeURIComponent(tokenHash)}` },
     idempotencyKey: `reset:${acct.id}:${tokenHash.slice(0, 16)}`,
   });
 }
@@ -142,7 +142,7 @@ export async function requestEmailChange(actor: Account, currentPassword: string
     to: v.newEmail,
     recipientAccountId: actor.id,
     payload: { org: org?.name, support: org?.supportEmail, newEmail: v.newEmail },
-    secret: { link: `${env().APP_URL}/auth/confirm?type=email_change&token_hash=${encodeURIComponent(tokenHash)}` },
+    secret: { link: `${env().APP_URL}/auth/confirm#type=email_change&token_hash=${encodeURIComponent(tokenHash)}` },
     idempotencyKey: `emailchange:${actor.id}:${tokenHash.slice(0, 16)}`,
   });
   await audit(sql(), { actorId: actor.id, action: "account.email_change_requested", objectType: "account", objectId: actor.id });
@@ -172,4 +172,14 @@ export async function removeOwner(actor: Account, accountId: string) {
     await t`update accounts set is_owner = false, updated_at = now() where id = ${accountId}`;
     await audit(t, { actorId: actor.id, action: "account.owner_removed", objectType: "account", objectId: accountId });
   });
+}
+
+/** Signed-in password change: re-verifies the current password, then ends other sessions. */
+export async function changePassword(actor: Account, current: string, input: { password: string; confirm: string }, ip: string) {
+  await rateLimit(`signin:ip:${ip}`, 30, 900);
+  await rateLimit(`signin:email:${actor.email}`, 8, 900);
+  const subject = await auth().signIn(actor.email, current);
+  if (!subject) throw invalid("Your current password is incorrect.", { current: "Incorrect password." });
+  await setNewPassword(input);
+  await audit(sql(), { actorId: actor.id, action: "account.password_changed", objectType: "account", objectId: actor.id });
 }

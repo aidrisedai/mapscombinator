@@ -145,3 +145,37 @@ export async function revokeCohortRole(actor: Account, cohortId: string, roleId:
     await audit(t, { actorId: actor.id, action: "role.revoke", objectType: "cohort_role", objectId: roleId, cohortId, summary: { role: r.role, account: r.account_id } });
   });
 }
+
+/** Gate for the Manage area: platform owners or anyone holding an active admin role. */
+export async function hasAnyAdminRole(actor: Account) {
+  if (actor.isOwner) return true;
+  const [r] = await sql()`select exists (select 1 from cohort_roles where account_id = ${actor.id} and role = 'admin' and active) as ok`;
+  return r.ok as boolean;
+}
+
+/** Cohorts the actor administers (owners: every cohort in the organization), with light counts. */
+export async function listManagedCohorts(actor: Account) {
+  const db = sql();
+  const scope = actor.isOwner
+    ? db`true`
+    : db`exists (select 1 from cohort_roles r where r.cohort_id = c.id and r.account_id = ${actor.id} and r.role = 'admin' and r.active)`;
+  const rows = await db`
+    select c.*,
+      (select count(*)::int from enrollments e where e.cohort_id = c.id and e.status = 'active') as startup_count,
+      (select count(*)::int from cohort_roles r where r.cohort_id = c.id and r.role = 'admin' and r.active) as admin_count
+    from cohorts c
+    where c.organization_id = ${actor.organizationId} and ${scope}
+    order by case c.status when 'active' then 0 when 'draft' then 1 when 'completed' then 2 else 3 end, c.start_date desc`;
+  return rows.map((r) => ({ ...mapCohort(r), startupCount: r.startup_count as number, adminCount: r.admin_count as number }));
+}
+
+/** Setup facts for first-use guidance on the cohort overview. */
+export async function cohortSetupCounts(actor: Account, cohortId: string) {
+  await requireCohortAdmin(actor, cohortId);
+  const [r] = await sql()`
+    select
+      (select count(*)::int from cohort_roles where cohort_id = ${cohortId} and role = 'admin' and active) as admins,
+      (select count(*)::int from enrollments where cohort_id = ${cohortId} and status = 'active') as startups,
+      (select count(*)::int from program_weeks where cohort_id = ${cohortId} and content_state = 'published') as published_weeks`;
+  return { admins: r.admins as number, startups: r.startups as number, publishedWeeks: r.published_weeks as number };
+}

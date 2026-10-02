@@ -2,7 +2,7 @@ import "server-only";
 import { z } from "zod";
 import { email, optionalHttps, requiredText } from "@/lib/validation";
 import { audit } from "../audit";
-import { assertAdminWritable, canSeeTeamPrivate, requireCohortAdmin, requireCohortRead } from "../authz";
+import { assertAdminWritable, canSeeTeamPrivate, isUuid, requireCohortAdmin, requireCohortRead } from "../authz";
 import { sql, tx } from "../db";
 import { conflict, forbidden, invalid, notFound } from "../errors";
 import type { Account } from "../session";
@@ -170,4 +170,14 @@ export async function listReturnableStartups(actor: Account, cohortId: string) {
 
 export function ensureNotEmpty(v: string, label: string) {
   if (!v.trim()) throw invalid(`${label} is required.`);
+}
+
+/** Basic profile of an existing organization startup, for re-enrolling it (owners only). */
+export async function getReturnableStartup(actor: Account, cohortId: string, startupId: string) {
+  await requireCohortAdmin(actor, cohortId);
+  if (!actor.isOwner) throw forbidden("Only platform owners can re-enroll a startup from another cohort.");
+  if (!isUuid(startupId)) throw notFound("Startup not found.");
+  const [s] = await sql()`select id, name, description, website from startups where id = ${startupId} and organization_id = ${actor.organizationId}`;
+  if (!s) throw notFound("Startup not found.");
+  return { id: s.id as string, name: s.name as string, description: s.description as string, website: (s.website as string | null) ?? null };
 }

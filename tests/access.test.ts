@@ -115,14 +115,14 @@ describe("invitations (AC03–AC05)", () => {
     const id = await createInvitation(owner, { role: "founder", email: invitee.email, cohortId: C.id, enrollmentId: e });
     await expect(createInvitation(owner, { role: "founder", email: invitee.email, cohortId: C.id, enrollmentId: e })).rejects.toThrow(/pending invitation/);
     const [ob] = await sql()`select secret_payload from email_outbox where related_id = ${id}`;
-    const token1 = (ob.secret_payload.link as string).split("/").pop()!;
+    const token1 = (ob.secret_payload.link as string).split("#").pop()!;
     expect((await lookupInvitation(token1))?.status).toBe("open");
     // Looking up (GET) does not consume.
     expect((await lookupInvitation(token1))?.status).toBe("open");
     await resendInvitation(owner, id);
     expect(await lookupInvitation(token1)).toBeNull(); // old link invalid
     const [ob2] = await sql()`select secret_payload from email_outbox where related_id = ${id} order by created_at desc limit 1`;
-    const token2 = (ob2.secret_payload.link as string).split("/").pop()!;
+    const token2 = (ob2.secret_payload.link as string).split("#").pop()!;
     await expect(tx((t) => consumeInvitation(t, token2, other))).rejects.toThrow(/different email/);
     // Concurrent acceptance: exactly one membership.
     await Promise.allSettled([tx((t) => consumeInvitation(t, token2, invitee)), tx((t) => consumeInvitation(t, token2, invitee))]);

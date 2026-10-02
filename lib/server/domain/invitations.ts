@@ -4,9 +4,9 @@ import { z } from "zod";
 import { formatInstant } from "@/lib/time";
 import { email as emailSchema, text } from "@/lib/validation";
 import { audit } from "../audit";
-import { cohortAccess } from "../authz";
+import { cohortAccess, isUuid, requireCohortAdmin } from "../authz";
 import { sql, tx, type Db, type Tx } from "../db";
-import { enqueueEmail } from "../email/outbox";
+import { enqueueEmail, retryOutbox } from "../email/outbox";
 import { render } from "../email/templates";
 import { env } from "../env";
 import { conflict, forbidden, invalid, notFound } from "../errors";
@@ -80,7 +80,7 @@ export async function previewInvitation(actor: Account, input: InviteInput) {
   const expiresAt = new Date(Date.now() + org.invitationValidDays * 86400_000);
   const tz = cohort?.timezone ?? "America/Los_Angeles";
   const ctx = { org: org.name, support: cohort?.supportEmail ?? org.supportEmail, cohort: cohort?.name ?? null, startup, inviter: actor.displayName, expires: formatInstant(expiresAt, tz) };
-  const msg = render("invitation", payloadFor(v.email, v.role, ctx), { link: `${env().APP_URL}/accept-invitation/•••` });
+  const msg = render("invitation", payloadFor(v.email, v.role, ctx), { link: `${env().APP_URL}/accept-invitation#•••` });
   return { to: v.email, role: v.role, cohort: cohort?.name ?? null, startup, subject: msg.subject, text: msg.text, alreadyHasAccess: await alreadyHasAccess(db, v) };
 }
 
@@ -113,7 +113,7 @@ async function issue(t: Tx, actor: Account | null, invitationId: string, sendNum
     cohortId: inv.cohort_id,
     authorizedBy: actor?.id ?? null,
     payload: payloadFor(inv.email, inv.role, ctx),
-    secret: { link: `${env().APP_URL}/accept-invitation/${token}` },
+    secret: { link: `${env().APP_URL}/accept-invitation#${token}` },
     related: { type: "invitation", id: invitationId },
     idempotencyKey: `invitation:${invitationId}:${sendNumber}`,
   });
@@ -323,4 +323,54 @@ export function invitationStatusLabel(i: { state: string; delivery_state: string
     default:
       return i.delivery_state;
   }
+}
+
+/** Platform-owner invitations (owner role has no cohort). */
+export async function listOwnerInvitations(actor: Account) {
+  if (!actor.isOwner) throw forbidden("Only platform owners can see owner invitations.");
+  return sql()`
+    select i.id, i.email, i.invitee_name, i.role, i.state, i.delivery_state, i.created_at, i.expires_at, i.last_sent_at, i.send_count,
+           i.accepted_at,
+           (select count(*)::int from invitation_help_requests h where h.invitation_id = i.id and h.handled_at is null) as help_requests,
+           (select o.last_error from email_outbox o where o.related_type = 'invitation' and o.related_id = i.id order by o.created_at desc limit 1) as last_error
+    from invitations i
+    where i.organization_id = ${actor.organizationId} and i.role = 'owner' and i.state not in ('accepted', 'revoked')
+    order by i.created_at desc`;
+}
+
+export const OUTBOX_STATES = ["queued", "sending", "provider_accepted", "delivered", "bounced", "complained", "failed", "suppressed"] as const;
+export type OutboxState = (typeof OUTBOX_STATES)[number];
+export const OUTBOX_PAGE_SIZE = 50;
+
+/** Email delivery log for one cohort (administrators only). Secrets are never selected. */
+export async function listCohortOutbox(actor: Account, cohortId: string, f: { state?: string | null; page?: number }) {
+  await requireCohortAdmin(actor, cohortId);
+  const db = sql();
+  const state = f.state && (OUTBOX_STATES as readonly string[]).includes(f.state) ? f.state : null;
+  const page = Math.max(1, Math.min(1000, Math.floor(f.page ?? 1)));
+  const rows = await db`
+    select id, created_at, updated_at, event_type, recipient_email, state, attempts, attempted_at, last_error
+    from email_outbox
+    where cohort_id = ${cohortId} and (${state}::text is null or state = ${state})
+    order by created_at desc, id
+    limit ${OUTBOX_PAGE_SIZE + 1} offset ${(page - 1) * OUTBOX_PAGE_SIZE}`;
+  const counts = await db`select state, count(*)::int as n from email_outbox where cohort_id = ${cohortId} group by state`;
+  return {
+    items: rows.slice(0, OUTBOX_PAGE_SIZE),
+    hasMore: rows.length > OUTBOX_PAGE_SIZE,
+    page,
+    state,
+    counts: Object.fromEntries(counts.map((c) => [c.state as string, c.n as number])) as Partial<Record<OutboxState, number>>,
+  };
+}
+
+/** Admin retry of one failed message in this cohort (same provider idempotency key). */
+export async function retryCohortEmail(actor: Account, cohortId: string, outboxId: string) {
+  if (!isUuid(outboxId)) throw notFound("We couldn't find that message.");
+  await tx(async (t) => {
+    await requireCohortAdmin(actor, cohortId, t);
+    const ok = await retryOutbox(t, outboxId, cohortId);
+    if (!ok) throw conflict("This message is no longer in a failed state. Reload to see its current status.");
+    await audit(t, { actorId: actor.id, action: "email.retry", objectType: "email_outbox", objectId: outboxId, cohortId });
+  });
 }

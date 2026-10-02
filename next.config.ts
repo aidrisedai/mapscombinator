@@ -1,8 +1,6 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Self-contained Node server for Railway (see DEPLOYMENT.md).
-  output: "standalone",
   poweredByHeader: false,
   serverExternalPackages: ["postgres"],
   experimental: {

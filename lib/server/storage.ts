@@ -42,13 +42,13 @@ export async function deleteObject(key: string) {
 }
 
 /** Short-lived URL (Supabase) or bytes (local). Call only after authorization. */
-export async function accessObject(key: string, filename: string): Promise<{ url: string } | StoredFile> {
+export async function accessObject(key: string, filename: string, download = true): Promise<{ url: string } | StoredFile> {
   const e = env();
   if (e.STORAGE_PROVIDER === "local") {
     const p = localPath(key);
     return { bytes: readFileSync(p), contentType: readFileSync(`${p}.type`, "utf8") };
   }
-  const { data, error } = await supabaseAdmin().storage.from(e.SUPABASE_STORAGE_BUCKET).createSignedUrl(key, 60, { download: filename });
+  const { data, error } = await supabaseAdmin().storage.from(e.SUPABASE_STORAGE_BUCKET).createSignedUrl(key, 60, download ? { download: filename } : undefined);
   if (error || !data) throw new Error(`signed url failed: ${error?.message}`);
   return { url: data.signedUrl };
 }

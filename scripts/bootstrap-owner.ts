@@ -31,7 +31,7 @@ async function main() {
       const expires = new Date(Date.now() + org.invitation_valid_days * 86400_000);
       const [inv] = await t`insert into invitations (organization_id, email, role, token_hash, expires_at, send_count)
                             values (${org.id}, ${email}, 'owner', ${createHash("sha256").update(token).digest("hex")}, ${expires}, 1) returning id`;
-      const link = `${appUrl}/accept-invitation/${token}`;
+      const link = `${appUrl}/accept-invitation#${token}`;
       if (printLink) {
         await t`update invitations set delivery_state = 'suppressed' where id = ${inv.id}`;
         console.log(`Owner invitation for ${email} (expires ${expires.toISOString()}):\n${link}\nOpen it, set a password, and you're in. The link works once.`);

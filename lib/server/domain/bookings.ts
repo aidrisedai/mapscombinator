@@ -9,6 +9,7 @@ import { enqueueEmail } from "../email/outbox";
 import { env } from "../env";
 import { AppError, conflict, forbidden, invalid, notFound } from "../errors";
 import type { Account } from "../session";
+import { requireMentorManager } from "./mentors";
 import { getOrganization } from "./organization";
 import { parse } from "./validate";
 
@@ -392,6 +393,25 @@ export async function cohortBookings(actor: Account, cohortId: string) {
   await requireCohortAdmin(actor, cohortId);
   const db = sql();
   return db`${BOOKING_SELECT(db)} where b.cohort_id = ${cohortId} order by b.starts_at desc limit 300`;
+}
+
+/** Human-readable cancellation policy (same text used in confirmation emails). */
+export function cancellationPolicyText(p: { cancellationWindowMinutes: number }) {
+  return policyText(p);
+}
+
+/**
+ * A mentor's appointments for the mentor area. Self: every cohort. On behalf
+ * (cohort admin): only cohorts the actor administers where this person mentors.
+ */
+export async function mentorBookingsFor(actor: Account, mentorId: string, when: "upcoming" | "past") {
+  if (mentorId === actor.id) return mentorBookings(actor, when);
+  const m = await requireMentorManager(actor, mentorId);
+  const ids = [...m.adminCohortIds];
+  const db = sql();
+  return when === "upcoming"
+    ? db`${BOOKING_SELECT(db)} where b.mentor_account_id = ${mentorId} and b.cohort_id = any(${ids}) and b.state = 'confirmed' and b.ends_at >= now() order by b.starts_at`
+    : db`${BOOKING_SELECT(db)} where b.mentor_account_id = ${mentorId} and b.cohort_id = any(${ids}) and (b.ends_at < now() or b.state <> 'confirmed') order by b.starts_at desc limit 100`;
 }
 
 export { localDateOf };

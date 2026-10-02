@@ -206,14 +206,16 @@ export async function removeResource(actor: Account, cohortId: string, resourceI
 }
 
 /** Authorized file access: readers only for published weeks; admins always. */
-export async function openResource(actor: Account, resourceId: string) {
+/** download "auto": PDFs open inline in the browser viewer; other types download. */
+export async function openResource(actor: Account, resourceId: string, mode: "auto" | "download" = "download") {
   const [r] = await sql()`select r.*, w.content_state from week_resources r join program_weeks w on w.id = r.week_id
                           where r.id = ${resourceId} and r.kind = 'file' and r.state = 'ready'`;
   if (!r) throw notFound();
   const a = await requireCohortRead(actor, r.cohort_id);
   if (!a.isAdmin && r.content_state !== "published") throw notFound();
   await audit(sql(), { actorId: actor.id, action: "resource.download", objectType: "week_resource", objectId: r.id, cohortId: r.cohort_id });
-  return { resource: r, access: await accessObject(r.storage_key, r.filename) };
+  const download = mode === "download" || r.content_type !== "application/pdf";
+  return { resource: r, download, access: await accessObject(r.storage_key, r.filename, download) };
 }
 
 /** Worker: remove blobs of uploads that never completed (older than 1 day). */
