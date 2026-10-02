@@ -42,3 +42,4 @@ next-env.d.ts
 
 # local data (dev uploads, dev mail log)
 /.data/
+!.env.example
