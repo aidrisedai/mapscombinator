@@ -85,8 +85,8 @@ export type InvitationInspection =
     };
 
 /** Read-only: the token arrives in a POST body (from the URL fragment), never in a logged URL. */
-export async function inspectInvitationAction(token: string): Promise<InvitationInspection> {
-  const inv = await lookupInvitation(token);
+export async function inspectInvitationAction(fd: FormData): Promise<InvitationInspection> {
+  const inv = await lookupInvitation(str(fd, "token"));
   if (!inv) return { status: "invalid" };
   const v = await getViewer();
   const viewerEmail = v.account?.email ?? null;

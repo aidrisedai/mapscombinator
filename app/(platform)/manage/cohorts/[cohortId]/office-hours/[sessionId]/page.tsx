@@ -10,7 +10,7 @@ import { getSession, listSeriesOccurrences, sessionEmailCounts } from "@/lib/ser
 import { recipientCount } from "@/lib/server/domain/recipients";
 import { load, one } from "@/lib/server/page";
 import { requirePageAccount } from "@/lib/server/session";
-import { formatInstant, formatTimeRange } from "@/lib/time";
+import { formatInstant, formatTimeRange, weekNumberFor } from "@/lib/time";
 import { sessionFormOptions } from "../data";
 import { CancelSessionForm, EditSessionForm, PublishSessionForm } from "./forms";
 
@@ -41,6 +41,9 @@ export default async function ManageSessionPage({ params, searchParams }: { para
   const canPublish = writable && ((s.state === "draft" && !started) || (s.series_id && seriesDrafts > 0));
   const minutes = Math.round((new Date(s.ends_at).getTime() - new Date(s.starts_at).getTime()) / 60000);
   const week = s.week_id ? weekNumberById.get(s.week_id) : undefined;
+  // Keep "Automatic" when the stored week is simply the week the date falls in.
+  const autoWeek = weekNumberFor(access.cohort.startDate, access.cohort.weekCount, localDate);
+  const weekDefault = week && week !== autoWeek ? week : 0;
   const byTemplate = new Map<string, { state: string; n: number }[]>();
   for (const r of emailRows) byTemplate.set(r.template, [...(byTemplate.get(r.template) ?? []), { state: r.state, n: r.n }]);
   const base = `/manage/cohorts/${cohortId}/office-hours`;
@@ -128,7 +131,7 @@ export default async function ManageSessionPage({ params, searchParams }: { para
                   location: s.location ?? "",
                   description: s.description,
                   preparation: s.preparation,
-                  weekNumber: week ?? 0,
+                  weekNumber: weekDefault,
                 }}
               />
             </Card>

@@ -261,6 +261,29 @@ try {
     await shot(m, "12-mobile-composer");
   });
 
+  await step("admin creates a weekly office-hours series, publishes with email; founder sees it", async () => {
+    await owner.goto(`${cohortUrl}/office-hours`);
+    const day = new Date(Date.parse(today) + 2 * 86400000).toISOString().slice(0, 10);
+    await owner.getByLabel(/^Title/).fill("Founder office hours");
+    await owner.getByLabel(/^Host name/).fill("Program team");
+    await owner.getByLabel(/^Meeting link/).fill("https://meet.example.org/office-hours");
+    await owner.getByLabel(/^Date/).fill(day);
+    await owner.getByLabel(/^Start time/).fill("17:00");
+    await owner.getByLabel(/^Duration/).fill("60");
+    await owner.getByLabel(/^Repeat weekly/).check();
+    await owner.getByLabel(/^Number of occurrences/).fill("3");
+    await owner.getByRole("button", { name: /Preview dates/ }).click();
+    await owner.getByRole("button", { name: /Create as drafts/ }).click();
+    await owner.waitForURL(/office-hours\/[0-9a-f-]{36}/);
+    await owner.getByLabel(/^Send announcement email/).check();
+    await owner.getByRole("button", { name: /^Publish/ }).first().click();
+    await owner.getByText(/queued/i).first().waitFor();
+    await shot(owner, "12b-session-published");
+    await waitForMail(founderEmail, "Office hours scheduled");
+    await founder.goto(`${BASE}/app/cohorts/${cohortId}/office-hours`);
+    await founder.getByText("Founder office hours").first().waitFor();
+  });
+
   if (process.env.E2E_SKIP_BOOKING !== "1") {
     let mentorPage;
     await step("admin invites a mentor; mentor publishes availability", async () => {
@@ -280,26 +303,33 @@ try {
       await mentorPage.waitForURL(/\/mentor\//);
       await mentorPage.goto(`${BASE}/mentor/availability`);
       const day = new Date(Date.parse(today) + 3 * 86400000).toISOString().slice(0, 10);
-      await mentorPage.getByLabel(/^Date|^Start date/).first().fill(day);
-      await mentorPage.getByLabel(/^Start time/).first().fill("10:00");
-      await mentorPage.getByLabel(/^End time/).first().fill("11:00");
+      const rule = mentorPage.locator("form").filter({ has: mentorPage.getByRole("button", { name: /Preview times/ }) });
+      await rule.getByLabel("One date only").check();
+      await rule.getByLabel(/^Date/).fill(day);
+      await rule.getByLabel(/^From/).fill("10:00");
+      await rule.getByLabel(/^Until/).fill("11:00");
       const box = mentorPage.getByRole("checkbox", { name: new RegExp(`E2E Cohort ${run}`) });
       if (!(await box.isChecked())) await box.check();
-      await mentorPage.getByRole("button", { name: /Preview/ }).first().click();
-      await mentorPage.getByText(/10:00|10:15/).first().waitFor();
+      await mentorPage.getByRole("button", { name: /Preview times/ }).click();
+      await mentorPage.waitForTimeout(2500);
+      await shot(mentorPage, "13a-availability-after-preview");
+      await mentorPage.getByRole("button", { name: /Publish availability/ }).waitFor();
       await shot(mentorPage, "13-availability-preview");
       await mentorPage.getByRole("button", { name: /Publish availability/ }).click();
-      await mentorPage.getByText(/upcoming|published|slots/i).first().waitFor();
+      await mentorPage.waitForTimeout(1500);
+      await shot(mentorPage, "13b-availability-published");
     });
 
     let bookingUrl = "";
     await step("founder books a mentor; confirmation persists and both get email", async () => {
       await founder.goto(`${BASE}/app/cohorts/${cohortId}/office-hours?tab=mentors`);
       await founder.getByRole("link", { name: /Maya Mentor/ }).first().click();
-      await founder.getByRole("button", { name: /10:00/ }).first().click();
+      await founder.getByRole("radio").first().check({ force: true });
+      await founder.waitForTimeout(800);
+      await founder.getByRole("button", { name: /^Continue$/ }).click();
       await founder.getByLabel(/^Topic/).fill("Pricing for clinics");
-      await founder.getByLabel(/help/i).first().fill("Should we charge per volunteer?");
-      await founder.getByRole("button", { name: /Review|Continue/ }).first().click();
+      await founder.getByLabel(/^What help do you need/).fill("Should we charge per volunteer?");
+      await founder.getByRole("button", { name: /Review booking/ }).click();
       await shot(founder, "14-booking-review");
       await founder.getByRole("button", { name: /Confirm booking/ }).click();
       await founder.waitForURL(/\/app\/appointments\/[0-9a-f-]{36}/);
@@ -312,9 +342,8 @@ try {
 
     await step("founder reschedules; old/new details emailed", async () => {
       await founder.goto(bookingUrl);
-      await founder.getByRole("button", { name: /Reschedule/ }).first().click();
-      await founder.getByRole("button", { name: /10:15|10:30/ }).first().click();
-      await founder.getByRole("button", { name: /Confirm new time|Confirm reschedule|Reschedule to/ }).first().click();
+      await founder.getByRole("radio").nth(1).check({ force: true });
+      await founder.getByRole("button", { name: /Move to this time/ }).click();
       await founder.waitForURL((u) => u.toString() !== bookingUrl && /appointments\//.test(u.toString()));
       const m = await waitForMail(mentorEmail, "Rescheduled");
       if (!/Previous time/.test(m.text)) throw new Error("reschedule email lacks previous time");

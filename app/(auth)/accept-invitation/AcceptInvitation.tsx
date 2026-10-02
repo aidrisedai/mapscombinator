@@ -38,7 +38,7 @@ export function AcceptInvitation() {
 
   const inspect = useCallback(async (t: string) => {
     try {
-      setInfo(await inspectInvitationAction(t));
+      setInfo(await inspectInvitationAction(fd(t)));
     } catch {
       setFailed(true);
     }
