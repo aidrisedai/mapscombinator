@@ -89,7 +89,8 @@ export function previewSessions(a: CohortAccess, input: Record<string, string>) 
 
 async function snapshot(t: Tx, sessionId: string, actorId: string) {
   const [s] = await t`select * from office_hours_sessions where id = ${sessionId}`;
-  await t`insert into office_hours_session_revisions (session_id, revision, snapshot, actor_id) values (${sessionId}, ${s.revision}, ${t.json(s as never)}, ${actorId})`;
+  await t`insert into office_hours_session_revisions (session_id, revision, snapshot, actor_id) values (${sessionId}, ${s.revision}, ${t.json(s as never)}, ${actorId})
+          on conflict (session_id, revision) do nothing`; // publishing a draft edited earlier keeps that revision's snapshot
 }
 
 /** Create one session or a weekly series (separate occurrences), as drafts. */
