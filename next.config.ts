@@ -1,16 +1,28 @@
 import type { NextConfig } from "next";
 
-// Static export so the site can be hosted on GitHub Pages.
-// NEXT_PUBLIC_BASE_PATH is set by the deploy workflow (e.g. "/mapscombinator")
-// and left empty for local development or a custom domain.
-const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
-
 const nextConfig: NextConfig = {
-  output: "export",
-  basePath,
-  trailingSlash: true,
-  images: {
-    unoptimized: true,
+  // Self-contained Node server for Railway (see DEPLOYMENT.md).
+  output: "standalone",
+  poweredByHeader: false,
+  serverExternalPackages: ["postgres"],
+  experimental: {
+    serverActions: {
+      // Weekly resources are uploaded through a route handler; actions stay small.
+      bodySizeLimit: "1mb",
+    },
+  },
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "no-referrer" },
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+        ],
+      },
+    ];
   },
 };
 
