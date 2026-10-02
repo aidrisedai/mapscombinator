@@ -38,6 +38,11 @@ export function SiteFooter() {
                   Contact
                 </Link>
               </li>
+              <li>
+                <Link href="/sign-in" className="hover:text-moss">
+                  Program sign in
+                </Link>
+              </li>
             </ul>
           </nav>
 
