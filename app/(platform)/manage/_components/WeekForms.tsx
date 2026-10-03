@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useRef, useState, useTransition } from "react";
+import { startTransition, useRef, useState, useTransition } from "react";
 import { ActionButton, ActionForm, TextAreaField, TextField, type Result } from "@/components/ui/forms";
 import { buttonClass, cx } from "@/components/ui/primitives";
 import { addLinkResourceAction, publishWeekAction, saveWeekDraftAction, unpublishWeekAction } from "../actions";
@@ -106,7 +106,7 @@ export function PublishPanel({
             <label htmlFor={`send-${week}`} className="text-sm text-ink">
               <span className="font-medium">Send email to cohort</span>
               <span className="block text-xs text-ink/60">
-                {people} with access to this cohort (including you if you&apos;re a member). One message each; addresses aren&apos;t shared.
+                {people}{" "}with access to this cohort (including you if you&apos;re a member). One message each; addresses aren&apos;t shared.
               </span>
             </label>
           </div>
@@ -197,7 +197,9 @@ export function UploadForm({ cohortId, week, maxMib, replacesId, replacesLabel, 
         setDone(true);
         setLabel("");
         if (fileRef.current) fileRef.current.value = "";
-        router.refresh();
+        // Called from an XHR callback, outside React: refresh inside a transition
+        // or the router may drop it and the list stays stale.
+        startTransition(() => router.refresh());
         onDone?.();
       } else {
         setError(body?.error ?? (xhr.status === 413 ? `That file is too large (max ${maxMib} MiB).` : "The upload didn't finish. Any previous file is unchanged. Try again."));

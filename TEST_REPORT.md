@@ -39,6 +39,27 @@ Browser walkthrough steps (`scripts/e2e.mjs`; screenshots in `.data/e2e/`):
 17. Founder books → confirmation page → confirmation emails to founder and mentor
 18. Founder reschedules → old reservation released → reschedule email with previous time
 
+## Pre-launch QA pass (2026-10-03)
+
+Run against a fresh database and a production build (`npm run build && npm run start`):
+- `npm run e2e`: 18/18 steps.
+- `scripts/crawl.mjs`: signed out, owner, founder, cofounder and mentor, at 1280 px and 390 px. Every reachable page (266–342 page loads per run) was checked for server errors, error screens, console errors, "undefined/NaN" text and phone overflow.
+- A functional/security probe: 31 checks, all passing after re-running the one timing-sensitive check. It covered:
+  - founders and mentors are blocked from Manage pages and exports;
+  - signed-out file download and journal access are refused;
+  - founder upload and cross-site upload are refused;
+  - announcements stay hidden until published;
+  - session cancellation, with its email;
+  - a mentor cancelling a booking needs a reason, and the founder gets an email;
+  - cohort dates lock once teams have posted;
+  - the full password reset, including signing out other sessions, single-use links and the generic answer for unknown emails;
+  - removing a cofounder takes effect on their next click.
+
+Fixed in this pass:
+- After uploading a weekly resource, the list didn't refresh until the page was reloaded (the refresh was called outside a React transition).
+- On phones, the Delivery log and the Platform accounts table made the whole page scroll sideways (a screen-reader label in the table was positioned against the page).
+- Missing space in "1 person with access".
+
 ## Acceptance matrix
 
 | AC | Status | Evidence / notes |

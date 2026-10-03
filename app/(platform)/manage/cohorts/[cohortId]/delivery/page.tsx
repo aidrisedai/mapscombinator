@@ -66,7 +66,7 @@ export default async function DeliveryPage({ params, searchParams }: { params: P
           {data.state ? <Link href={href(null)} className="font-medium text-emerald underline">Show all emails</Link> : "Emails appear here when you send invitations or choose to notify the cohort."}
         </EmptyState>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-line/80">
+        <div className="relative overflow-x-auto rounded-lg border border-line/80">
           <table className="w-full min-w-[52rem] text-left text-sm">
             <thead className="bg-cream/60 text-xs uppercase tracking-wide text-ink/60">
               <tr>

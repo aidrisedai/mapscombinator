@@ -118,7 +118,7 @@ export default async function PlatformPage({ searchParams }: { searchParams: Pro
         {accounts.items.length === 0 ? (
           <p className="rounded-md border border-dashed border-line bg-cream/40 px-4 py-6 text-center text-sm text-ink/70">{accounts.q ? `No accounts match “${accounts.q}”.` : "No accounts yet."}</p>
         ) : (
-          <div className="overflow-x-auto rounded-lg border border-line/80">
+          <div className="relative overflow-x-auto rounded-lg border border-line/80">
             <table className="w-full min-w-[44rem] text-left text-sm">
               <thead className="bg-cream/60 text-xs uppercase tracking-wide text-ink/60">
                 <tr>

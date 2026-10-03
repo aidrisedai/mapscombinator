@@ -98,7 +98,7 @@ export default async function CohortOverviewPage({ params, searchParams }: { par
             No startups are enrolled yet. <Link href={`${base}/startups`} className="font-medium text-emerald underline">Add a startup</Link> to see who has posted.
           </p>
         ) : (
-          <div className="overflow-x-auto rounded-lg border border-line/80">
+          <div className="relative overflow-x-auto rounded-lg border border-line/80">
             <table className="w-full min-w-[40rem] text-left text-sm">
               <thead className="bg-cream/60 text-xs uppercase tracking-wide text-ink/60">
                 <tr>
