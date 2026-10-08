@@ -189,7 +189,7 @@ export function BookingFlow({
           <Labeled id="bk-topic" label="Topic" required error={errors.topic} hint="One line the mentor can scan, e.g. “Pricing our pilot for clinics”.">
             {(p) => (
               <>
-                <input {...p} value={topic} onChange={(e) => setTopic(e.target.value)} className={inputClass} autoComplete="off" />
+                <input {...p} name="topic" value={topic} onChange={(e) => setTopic(e.target.value)} className={inputClass} autoComplete="off" />
                 <Counter n={topic.length} max={TOPIC_MAX} />
               </>
             )}
@@ -197,7 +197,7 @@ export function BookingFlow({
           <Labeled id="bk-help" label="What help do you need?" optional error={errors.helpNeeded} hint="Context, what you've tried, and the decision you're facing. Only your team, the mentor and administrators see this — it isn't posted to the journal.">
             {(p) => (
               <>
-                <textarea {...p} rows={5} value={helpNeeded} onChange={(e) => setHelpNeeded(e.target.value)} className={cx(inputClass, "resize-y leading-relaxed")} />
+                <textarea {...p} name="helpNeeded" rows={5} value={helpNeeded} onChange={(e) => setHelpNeeded(e.target.value)} className={cx(inputClass, "resize-y leading-relaxed")} />
                 <Counter n={helpNeeded.length} max={HELP_MAX} />
               </>
             )}

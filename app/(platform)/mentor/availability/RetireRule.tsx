@@ -1,12 +1,10 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { buttonClass } from "@/components/ui/primitives";
 import { retireRuleAction } from "../actions";
 
 export function RetireRule({ mentorId, ruleId }: { mentorId: string; ruleId: string }) {
-  const router = useRouter();
   const [pending, start] = useTransition();
   const [conflict, setConflict] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -23,8 +21,7 @@ export function RetireRule({ mentorId, ruleId }: { mentorId: string; ruleId: str
         if (r.ok) {
           setConflict(null);
           setError(null);
-          router.refresh();
-        } else if (r.code === "conflict" && !ack) setConflict(r.error);
+                  } else if (r.code === "conflict" && !ack) setConflict(r.error);
         else setError(r.error);
       } catch {
         setError("Couldn't reach the server. Try again.");

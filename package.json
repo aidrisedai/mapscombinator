@@ -16,6 +16,7 @@
     "e2e": "node scripts/e2e.mjs"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.132.0",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.117.2",
     "luxon": "^3.7.2",

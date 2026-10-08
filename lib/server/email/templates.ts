@@ -50,7 +50,7 @@ function compose(subject: string, org: string, blocks: Block[], support?: string
 const ROLE_LABEL: Record<string, string> = {
   owner: "platform owner",
   admin: "cohort administrator",
-  mentor: "mentor",
+  mentor: "mentor / advisor",
   viewer: "cohort viewer",
   founder: "founder",
 };

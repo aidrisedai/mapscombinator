@@ -69,7 +69,6 @@ export function PublishPanel({
   hasUnpublishedChanges: boolean;
   recipients: number;
 }) {
-  const router = useRouter();
   const [pending, start] = useTransition();
   const [send, setSend] = useState(false);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
@@ -88,7 +87,7 @@ export function PublishPanel({
         const queued = (r.data as { queued?: number } | undefined)?.queued ?? 0;
         setMessage({ ok: true, text: send ? `Published. ${queued} ${queued === 1 ? "email" : "emails"} queued for delivery; check the Delivery tab for status.` : "Published. No email was sent." });
         setSend(false);
-        router.refresh();
+        // refreshed by the server action
       } else setMessage({ ok: false, text: r.error });
     });
   }

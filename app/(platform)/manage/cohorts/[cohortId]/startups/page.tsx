@@ -6,6 +6,8 @@ import { listEnrollments, listReturnableStartups } from "@/lib/server/domain/sta
 import { load, one } from "@/lib/server/page";
 import { requirePageAccount } from "@/lib/server/session";
 import { CreateStartupForm, ReenrollStartupForm } from "../../../_components/StartupForms";
+import { AiAssistant } from "@/components/ai/AiAssistant";
+import { aiConfigured } from "@/lib/server/ai/assistant";
 
 export const metadata: Metadata = { title: "Startups" };
 
@@ -73,7 +75,10 @@ export default async function StartupsPage({ params, searchParams }: { params: P
           <div className="space-y-8">
             <Card>
               <SectionTitle>Add a startup</SectionTitle>
-              <CreateStartupForm cohortId={cohort.id} />
+              <>
+                <AiAssistant kind="startups" ctx={{ cohortId: cohort.id }} configured={aiConfigured()} title="Add startups with AI" intro="Paste a list, spreadsheet rows or an email about the startups. I draft one card per startup for you to check; saving them sends no emails — you invite founders afterwards." placeholder="e.g. Acme Health — scheduling for clinics — Fatima Ali fatima@acme.health, cofounder Cole Ng cole@acme.health" />
+                <CreateStartupForm cohortId={cohort.id} />
+              </>
             </Card>
             {returnable.length > 0 && (
               <Card>

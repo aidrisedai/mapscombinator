@@ -14,6 +14,8 @@ import { formatDate, formatInstant } from "@/lib/time";
 import { removeResourceAction } from "../../../../actions";
 import { AddLinkForm, PublishPanel, ReplaceToggle, UploadForm, WeekEditor } from "../../../../_components/WeekForms";
 import { WeekStateBadge } from "../../../../_components/weekState";
+import { AiAssistant } from "@/components/ai/AiAssistant";
+import { aiConfigured } from "@/lib/server/ai/assistant";
 
 export const metadata: Metadata = { title: "Edit week" };
 
@@ -83,7 +85,12 @@ export default async function WeekEditPage({ params }: { params: Promise<{ cohor
         <Card>
           <SectionTitle>Content</SectionTitle>
           {writable ? (
-            <WeekEditor cohortId={cohort.id} week={n} content={content} />
+            <>
+              <AiAssistant kind="week" ctx={{ cohortId: cohort.id, weekNumber: n }} target="#ai-target-week" configured={aiConfigured()} title="Draft this week with AI" placeholder="e.g. Week on customer discovery: each team runs 10 interviews, uses the Mom Test, brings top 3 insights to Friday office hours" />
+              <div id="ai-target-week">
+                <WeekEditor cohortId={cohort.id} week={n} content={content} />
+              </div>
+            </>
           ) : (
             <p className="text-sm text-ink/70">{content.title || "No content."}</p>
           )}

@@ -80,8 +80,8 @@ export function ActionForm({
       setResult(r);
       if (r.ok) {
         setDirty(false);
+        // The server action refreshes the page itself (lib/server/action.ts).
         if (after === "reset") formRef.current?.reset();
-        if (after === "refresh" || after === "reset") router.refresh();
         if (typeof after === "object") router.push(after.redirect);
       }
     });
@@ -133,7 +133,6 @@ export function ActionButton({
   confirmMessage?: string;
   size?: "sm" | "md";
 }) {
-  const router = useRouter();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   return (
@@ -149,11 +148,8 @@ export function ActionButton({
           start(async () => {
             try {
               const r = await action(fd);
-              if (!r.ok) setError(r.error);
-              else {
-                setError(null);
-                router.refresh();
-              }
+              // On success the server action refreshes the page itself.
+              setError(r.ok ? null : r.error);
             } catch (err) {
               if ((err as { digest?: string })?.digest?.startsWith?.("NEXT_REDIRECT")) throw err;
               setError("Couldn't reach the server. Try again.");

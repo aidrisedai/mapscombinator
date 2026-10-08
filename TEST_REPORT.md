@@ -60,6 +60,17 @@ Fixed in this pass:
 - On phones, the Delivery log and the Platform accounts table made the whole page scroll sideways (a screen-reader label in the table was positioned against the page).
 - Missing space in "1 person with access".
 
+## AI assistant and stability pass (2026-10-08)
+
+- `tests/ai.test.ts` intercepts the SDK's real HTTP request. It checks:
+  - the request: model `claude-opus-5-5`, structured JSON-schema output, `effort: "low"`, the `server-side-fallback-2026-07-01` beta header with `fallbacks: "default"`, and no `thinking` override;
+  - role checks: a founder can't use the startup assistant, another team's founder can't use this team's daily assistant, and only owners can draft cohorts;
+  - context: a founder's weekly context contains their own drafts but not another team's posts;
+  - failure handling: declined or cut-off answers return "no draft" instead of crashing (a parse crash was found and fixed).
+- **Not verified live:** no Anthropic key was available, so a real model call hasn't been made. Browser tests used a development-only fake provider (`AI_PROVIDER=fake`, refused in staging/production). The browser test filled and saved each section through its own button: cohort, bulk startups (edit + save, no emails), invite (normal preview, nothing sent), week, office-hours series, announcement, daily (controlled inputs), weekly, startup profile, mentor profile and booking question.
+- **Fixed: actions intermittently stuck on "Updating…".** This was present in the deployed version: about 45% of the time, clicking Activate right after creating a cohort hung, even though the server applied the change. The cause was the platform-wide `loading.tsx` Suspense boundary combined with server-action responses. Removing it took the hang rate to 0/8 in a targeted probe, and the walkthrough now passes 18/18 repeatedly. Page refreshes after actions now happen on the server (`refresh()` in `act()`) instead of a second browser-side refresh.
+- **Fixed: blank AI fields could wipe existing form values.** Blanks are now skipped.
+
 ## Acceptance matrix
 
 | AC | Status | Evidence / notes |

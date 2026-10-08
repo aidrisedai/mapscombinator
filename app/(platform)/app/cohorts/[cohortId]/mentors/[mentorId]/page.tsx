@@ -6,6 +6,8 @@ import { load } from "@/lib/server/page";
 import { requirePageAccount } from "@/lib/server/session";
 import { toSlotView, type SlotView } from "@/components/office-hours/slots";
 import { BookingFlow } from "./BookingFlow";
+import { AiAssistant } from "@/components/ai/AiAssistant";
+import { aiConfigured } from "@/lib/server/ai/assistant";
 
 export const metadata: Metadata = { title: "Mentor" };
 
@@ -52,15 +54,20 @@ export default async function MentorPage({ params }: { params: Promise<{ cohortI
               </Notice>
             </div>
           ) : isFounder ? (
-            <BookingFlow
-              cohortId={cohortId}
-              cohortName={access.cohort.name}
-              mentorName={mentor.display_name}
-              slots={views}
-              teams={access.founderOf.map((f) => ({ enrollmentId: f.enrollmentId, startupName: f.startupName }))}
-              policyText={cancellationPolicyText(policy)}
-              meetingInstructions={mentor.meeting_instructions ?? ""}
-            />
+            <>
+              <AiAssistant kind="booking" ctx={{ cohortId, enrollmentId: access.founderOf[0]?.enrollmentId, mentorId: mentor.id }} target="#ai-target-booking" configured={aiConfigured()} audience="founder" title="Prepare your question with AI" intro="Pick a time first, then tell me what you want help with. I draft the topic and question for you to check." placeholder="e.g. We can't decide between charging clinics per seat or per volunteer shift" />
+              <div id="ai-target-booking">
+                <BookingFlow
+                cohortId={cohortId}
+                cohortName={access.cohort.name}
+                mentorName={mentor.display_name}
+                slots={views}
+                teams={access.founderOf.map((f) => ({ enrollmentId: f.enrollmentId, startupName: f.startupName }))}
+                policyText={cancellationPolicyText(policy)}
+                meetingInstructions={mentor.meeting_instructions ?? ""}
+              />
+              </div>
+            </>
           ) : (
             <div className="space-y-4">
               <Notice tone="info" title="Only founders book appointments">

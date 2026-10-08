@@ -1,13 +1,11 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
 import { ActionForm, TextField, type Result } from "@/components/ui/forms";
 import { buttonClass } from "@/components/ui/primitives";
 import { addExceptionAction } from "../actions";
 
 export function ExceptionForm({ mentorId, timezone, today }: { mentorId: string; timezone: string; today: string }) {
-  const router = useRouter();
   const [kind, setKind] = useState<"unavailable" | "replacement">("unavailable");
   const [formKey, setFormKey] = useState(0);
   const [needsAck, setNeedsAck] = useState<string | null>(null);
@@ -50,7 +48,6 @@ export function ExceptionForm({ mentorId, timezone, today }: { mentorId: string;
         setDone(r.data.message);
         setKind("unavailable");
         setFormKey((k) => k + 1);
-        router.refresh();
       } catch {
         setAckError("We couldn't reach the server. Nothing was saved — try again.");
       }

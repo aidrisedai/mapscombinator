@@ -15,7 +15,7 @@ export function assertSameOrigin(req: Request) {
 
 export function errorResponse(err: unknown) {
   if (err instanceof AppError) {
-    const status = { unauthenticated: 401, forbidden: 403, not_found: 404, conflict: 409, validation: 422, rate_limited: 429, locked: 423 }[err.code];
+    const status = { unauthenticated: 401, forbidden: 403, not_found: 404, conflict: 409, validation: 422, rate_limited: 429, locked: 423, unavailable: 503 }[err.code];
     return NextResponse.json({ ok: false, error: err.message, fieldErrors: err.fieldErrors }, { status });
   }
   const ref = crypto.randomUUID().slice(0, 8);

@@ -11,6 +11,8 @@ import { formatInstant } from "@/lib/time";
 import { revokeCohortRoleAction } from "../../../actions";
 import { InvitationList } from "../../../_components/InvitationList";
 import { InviteForm } from "../../../_components/InviteFlow";
+import { AiAssistant } from "@/components/ai/AiAssistant";
+import { aiConfigured } from "@/lib/server/ai/assistant";
 
 export const metadata: Metadata = { title: "Members" };
 
@@ -18,7 +20,7 @@ type Row = Record<string, unknown>;
 
 const GROUPS = [
   { role: "admin", title: "Administrators", blurb: "Run this cohort: startups, invitations, weekly guide, office hours and announcements.", empty: "No cohort administrator yet." },
-  { role: "mentor", title: "Mentors", blurb: "Offer appointments to founders and read the published journal.", empty: "No mentors yet." },
+  { role: "mentor", title: "Mentors & advisors", blurb: "Advise startups, offer bookable appointments and read the published journal.", empty: "No mentors or advisors yet." },
   { role: "viewer", title: "Viewers", blurb: "Read published updates, the weekly guide and sessions. They can't post or see drafts.", empty: "No viewers yet." },
 ] as const;
 
@@ -31,7 +33,7 @@ export default async function MembersPage({ params }: { params: Promise<{ cohort
   const writable = cohort.status !== "archived";
   const pending = invitations.filter((i) => i.role !== "founder" && i.state !== "accepted" && i.state !== "revoked");
   const roleOptions = [
-    { value: "mentor", label: "Mentor" },
+    { value: "mentor", label: "Mentor / advisor" },
     { value: "viewer", label: "Viewer" },
     ...(account.isOwner ? [{ value: "admin", label: "Administrator" }] : []),
   ];
@@ -117,7 +119,12 @@ export default async function MembersPage({ params }: { params: Promise<{ cohort
             You&apos;ll see the exact email before anything is sent. If the person already has an account, accepting adds this role to it.
             {!account.isOwner && " Only platform owners can add administrators."}
           </p>
-          <InviteForm cohortId={cohort.id} roles={roleOptions} />
+          <>
+            <AiAssistant kind="invites" ctx={{ cohortId: cohort.id }} target="#ai-target-invites" configured={aiConfigured()} title="Invite mentors/advisors with AI" intro="Paste names and emails of mentors, advisors or viewers. I list them; each one goes through the normal invitation preview before anything is sent." placeholder="e.g. Advisors: Maya Chen maya@example.org (fundraising), Omar Haddad omar@example.org" />
+            <div id="ai-target-invites">
+              <InviteForm cohortId={cohort.id} roles={roleOptions} />
+            </div>
+          </>
         </Card>
       )}
 

@@ -7,6 +7,8 @@ import { load, one } from "@/lib/server/page";
 import { requirePageAccount } from "@/lib/server/session";
 import { addDays, formatDate, isIsoDate, todayIn, weekNumberFor } from "@/lib/time";
 import { Composer } from "./Composer";
+import { AiAssistant } from "@/components/ai/AiAssistant";
+import { aiConfigured } from "@/lib/server/ai/assistant";
 
 export const metadata: Metadata = { title: "Write update" };
 
@@ -68,17 +70,22 @@ export default async function NewUpdatePage({ params, searchParams }: { params: 
       )}
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <div>
-          <Composer
-            key={`${team.enrollmentId}:${kind}:${kind === "daily" ? date : week}`}
-            cohortId={cohortId}
-            enrollmentId={team.enrollmentId}
-            kind={kind}
-            period={kind === "daily" ? { reportDate: date } : { weekNumber: week }}
-            periodPicker={kind === "daily" ? { kind: "date", min: c.startDate, max: maxDate, value: date, hrefBase: `${base}&kind=daily&date=` } : { kind: "week", max: currentWeek, value: week, hrefBase: `${base}&kind=weekly&week=` }}
-            existing={existing}
-            limits={kind === "daily" ? LIMITS.daily : LIMITS.weekly}
-            journalHref={`/app/cohorts/${cohortId}/startups/${team.enrollmentId}`}
-          />
+          <>
+            <AiAssistant key={`ai-${kind}-${team.enrollmentId}-${kind === "daily" ? date : week}`} kind={kind} ctx={{ cohortId, enrollmentId: team.enrollmentId, weekNumber: week }} target="#ai-target-composer" configured={aiConfigured()} audience="founder" title={kind === "daily" ? "Write today's update with AI" : "Draft the weekly summary with AI"} intro={kind === "daily" ? "Jot down what happened today in any form — I turn it into the update for you to check. Nothing is posted until you press Save or Publish." : "Tell me how the week went. I use your daily notes too, and draft the summary for you to check before you publish."} placeholder={kind === "daily" ? "e.g. talked to 2 clinics, both want shift swaps, next build the swap screen, stuck on Twilio approval" : "e.g. big week: 5 interviews, pricing test failed, learned clinics pay per site"} />
+            <div id="ai-target-composer">
+              <Composer
+              key={`${team.enrollmentId}:${kind}:${kind === "daily" ? date : week}`}
+              cohortId={cohortId}
+              enrollmentId={team.enrollmentId}
+              kind={kind}
+              period={kind === "daily" ? { reportDate: date } : { weekNumber: week }}
+              periodPicker={kind === "daily" ? { kind: "date", min: c.startDate, max: maxDate, value: date, hrefBase: `${base}&kind=daily&date=` } : { kind: "week", max: currentWeek, value: week, hrefBase: `${base}&kind=weekly&week=` }}
+              existing={existing}
+              limits={kind === "daily" ? LIMITS.daily : LIMITS.weekly}
+              journalHref={`/app/cohorts/${cohortId}/startups/${team.enrollmentId}`}
+            />
+            </div>
+          </>
         </div>
         <aside className="space-y-4">
           <Notice tone="info" title="Who sees this">

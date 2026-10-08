@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 import { Card, PageHeader } from "@/components/ui/primitives";
 import { requirePageAccount } from "@/lib/server/session";
 import { NewCohortForm } from "../../_components/CohortForm";
+import { AiAssistant } from "@/components/ai/AiAssistant";
+import { aiConfigured } from "@/lib/server/ai/assistant";
 
 export const metadata: Metadata = { title: "Create cohort" };
 
@@ -22,7 +24,12 @@ export default async function NewCohortPage() {
         />
       </div>
       <Card>
-        <NewCohortForm />
+        <>
+          <AiAssistant kind="cohort" target="#ai-target-cohort" configured={aiConfigured()} placeholder="e.g. Spring 2027 cohort, starts March 1, 10 weeks, Seattle time. Support email program@maps.org" />
+          <div id="ai-target-cohort">
+            <NewCohortForm />
+          </div>
+        </>
       </Card>
     </div>
   );

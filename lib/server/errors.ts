@@ -1,6 +1,6 @@
 import "server-only";
 
-export type ErrorCode = "unauthenticated" | "forbidden" | "not_found" | "conflict" | "validation" | "rate_limited" | "locked";
+export type ErrorCode = "unauthenticated" | "forbidden" | "not_found" | "conflict" | "validation" | "rate_limited" | "locked" | "unavailable";
 
 /** Expected, user-explainable failure. Messages are safe to show. */
 export class AppError extends Error {

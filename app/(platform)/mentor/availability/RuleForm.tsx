@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
 import { TimezoneSelect } from "@/components/office-hours/TimezoneSelect";
 import { ActionForm, CheckboxField, SelectField, TextField, type Result } from "@/components/ui/forms";
@@ -19,7 +18,6 @@ function isoWeekday(date: string) {
 }
 
 export function RuleForm({ mentorId, defaultTimezone, today, cohorts }: { mentorId: string; defaultTimezone: string; today: string; cohorts: { id: string; name: string }[] }) {
-  const router = useRouter();
   const [formKey, setFormKey] = useState(0);
   const [kind, setKind] = useState<"single" | "weekly">("weekly");
   const [startDate, setStartDate] = useState(today);
@@ -59,7 +57,6 @@ export function RuleForm({ mentorId, defaultTimezone, today, cohorts }: { mentor
         snapshot.current = null;
         setWeekday(null);
         setFormKey((k) => k + 1);
-        router.refresh();
       } catch {
         setPublishError("We couldn't reach the server, so nothing was published. Try again.");
       }

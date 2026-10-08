@@ -28,6 +28,7 @@ const step = async (name, fn) => {
     console.log(`✓ ${name}`);
   } catch (err) {
     results.push({ name, ok: false, error: err.message.split("\n")[0] });
+    for (const [i, pg] of openPages.entries()) await pg.screenshot({ path: join(shots, `FAIL-${i}.png`), fullPage: true }).catch(() => {});
     console.log(`✗ ${name}\n    ${err.message.split("\n").slice(0, 3).join("\n    ")}`);
     throw err;
   }
@@ -55,9 +56,17 @@ const linkIn = (m) => m.text.match(/https?:\/\/\S+/g).find((u) => u.includes("ac
 
 const exe = existsSync("/opt/pw-browsers/chromium") ? "/opt/pw-browsers/chromium" : undefined;
 const browser = await chromium.launch({ executablePath: exe });
+const openPages = [];
 const newPage = async (viewport = { width: 1280, height: 900 }) => {
   const ctx = await browser.newContext({ viewport });
   const p = await ctx.newPage();
+  openPages.push(p);
+  if (process.env.E2E_DEBUG) {
+    p.on("requestfailed", (r) => console.log("   [requestfailed]", r.method(), r.url().replace(BASE, "").slice(0, 80), r.failure()?.errorText));
+    p.on("response", (r) => { if (r.request().method() === "POST") console.log("   [POST]", r.status(), r.url().replace(BASE, "").slice(0, 80), r.headers()["x-action-redirect"] ?? ""); });
+    p.on("framenavigated", (f) => { if (f === p.mainFrame()) console.log("   [navigated]", f.url().replace(BASE, "")); });
+    p.on("console", (m) => { if (m.type() === "error" || m.type() === "warning") console.log("   [console]", m.type(), m.text().slice(0, 200)); });
+  }
   p.on("dialog", (d) => d.accept());
   p.on("pageerror", (e) => console.log("   [pageerror]", e.message));
   return p;
@@ -288,7 +297,7 @@ try {
     let mentorPage;
     await step("admin invites a mentor; mentor publishes availability", async () => {
       await owner.goto(`${cohortUrl}/members`);
-      await owner.getByLabel(/^Role/).selectOption({ label: "Mentor" });
+      await owner.getByLabel(/^Role/).selectOption({ value: "mentor" });
       await owner.getByLabel(/^Name/).last().fill("Maya Mentor");
       await owner.getByLabel(/^Email/).last().fill(mentorEmail);
       await owner.getByRole("button", { name: /Preview invitation/ }).last().click();

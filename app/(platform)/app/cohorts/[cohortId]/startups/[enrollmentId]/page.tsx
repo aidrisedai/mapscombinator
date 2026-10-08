@@ -7,6 +7,8 @@ import { listTeamTimeline } from "@/lib/server/domain/updates";
 import { load, one } from "@/lib/server/page";
 import { requirePageAccount } from "@/lib/server/session";
 import { ProfileEditor } from "./ProfileEditor";
+import { AiAssistant } from "@/components/ai/AiAssistant";
+import { aiConfigured } from "@/lib/server/ai/assistant";
 
 export const metadata: Metadata = { title: "Startup" };
 
@@ -68,7 +70,12 @@ export default async function StartupPage({ params, searchParams }: { params: Pr
           {canEdit && (
             <Card>
               <SectionTitle>Edit profile</SectionTitle>
-              <ProfileEditor cohortId={cohortId} enrollmentId={enrollmentId} name={enrollment.name} description={enrollment.description} website={enrollment.website ?? ""} />
+              <>
+                <AiAssistant kind="startupProfile" ctx={{ cohortId, enrollmentId }} target="#ai-target-startup-profile" configured={aiConfigured()} audience="founder" title="Improve with AI" placeholder="e.g. Describe what you build and who it helps" />
+                <div id="ai-target-startup-profile">
+                  <ProfileEditor cohortId={cohortId} enrollmentId={enrollmentId} name={enrollment.name} description={enrollment.description} website={enrollment.website ?? ""} />
+                </div>
+              </>
             </Card>
           )}
         </aside>

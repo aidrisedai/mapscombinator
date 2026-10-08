@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { Field, inputClass, type Result } from "@/components/ui/forms";
 import { buttonClass, cx } from "@/components/ui/primitives";
@@ -23,7 +22,6 @@ async function call(action: (fd: FormData) => Promise<Result>, fields: Record<st
 
 /** Two-step invite: preview the exact message, then confirm to queue it. */
 function useInvite() {
-  const router = useRouter();
   const [pending, start] = useTransition();
   const [preview, setPreview] = useState<InvitationPreview | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -54,8 +52,7 @@ function useInvite() {
         setPreview(null);
         setError(null);
         onSent?.();
-        router.refresh();
-      } else {
+              } else {
         setError(r.error);
       }
     });
@@ -199,7 +196,7 @@ export function InviteForm({
           {roles && (
             <Field label="Role" name="role" required error={fe.role}>
               {({ id, describedBy, invalid }) => (
-                <select id={id} value={role} disabled={locked} onChange={(e) => setRole(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={inputClass}>
+                <select id={id} name="role" value={role} disabled={locked} onChange={(e) => setRole(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={inputClass}>
                   {roles.map((r) => (
                     <option key={r.value} value={r.value}>
                       {r.label}
@@ -211,12 +208,12 @@ export function InviteForm({
           )}
           <Field label="Name" name="name" required={addContact} optional={!addContact} error={fe.name}>
             {({ id, describedBy, invalid }) => (
-              <input id={id} value={name} disabled={locked} maxLength={120} autoComplete="off" onChange={(e) => setName(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={inputClass} />
+              <input id={id} name="name" value={name} disabled={locked} maxLength={120} autoComplete="off" onChange={(e) => setName(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={inputClass} />
             )}
           </Field>
           <Field label="Email" name="email" required hint={emailHint} error={fe.email}>
             {({ id, describedBy, invalid }) => (
-              <input id={id} type="email" value={email} disabled={locked} autoComplete="off" onChange={(e) => setEmail(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={inputClass} />
+              <input id={id} name="email" type="email" value={email} disabled={locked} autoComplete="off" onChange={(e) => setEmail(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={inputClass} />
             )}
           </Field>
         </div>

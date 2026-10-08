@@ -70,7 +70,7 @@ export async function switchAccountAction() {
   return { ok: true as const };
 }
 
-const ROLE: Record<string, string> = { owner: "Platform owner", admin: "Cohort administrator", mentor: "Mentor", viewer: "Cohort viewer", founder: "Founder" };
+const ROLE: Record<string, string> = { owner: "Platform owner", admin: "Cohort administrator", mentor: "Mentor / advisor", viewer: "Cohort viewer", founder: "Founder" };
 
 export type InvitationInspection =
   | { status: "invalid" }

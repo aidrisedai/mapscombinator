@@ -71,6 +71,23 @@ The worker drains the email outbox every 5 s (with `FOR UPDATE SKIP LOCKED`), ex
 
 The default pool is 10 connections per instance. The PRD sizing (≤50 concurrent users) fits one instance comfortably. Read pages are dynamic, server-rendered and indexed; we have **not** load-tested them, so treat the < 2 s targets as unverified until measured on the real infrastructure.
 
+## 3b. AI form assistant (optional)
+
+Every form has an "✦ … with AI" panel. People describe things in their own words, or paste notes, lists or emails, and the assistant drafts the form. Nothing is saved or sent until a person reviews the draft and presses the form's own button; invitations still go through the normal preview-then-confirm step.
+
+To turn it on:
+1. Create an account at https://console.anthropic.com, add billing, and create an API key.
+2. In Railway → Variables, set `ANTHROPIC_API_KEY` (server-only). Optional settings:
+   - `AI_MODEL` (default `claude-opus-5-5`).
+   - `AI_HOURLY_LIMIT` (requests per person per hour; default 40).
+3. Redeploy. Without a key the panels say the assistant isn't set up, and every form works as before.
+
+Notes:
+- **What's sent to Anthropic:** the person's typed or pasted text, plus minimal platform context: the cohort name, dates and timezone, and for a founder's weekly summary their own team's daily notes for that week. Other teams' data is never included.
+- **Logging:** each request is logged in the audit log with its size and token counts, never its content.
+- **Cost:** usage-based on your Anthropic account. Each request is a short drafting call at low effort; watch the Anthropic console's usage page during the first weeks.
+- **Refusals:** Anthropic's server-side fallback (`fallbacks: "default"`) automatically retries a request the main model declines on a fallback model. If no model can help, the person sees a polite "can't help" message.
+
 ## 4. Backups, restore, retention
 
 - **Database**: Supabase runs automated daily backups (Pro plan: 7 days; PITR available as an add-on). On the free plan, schedule your own `pg_dump`, e.g. a nightly GitHub Action or Railway cron:

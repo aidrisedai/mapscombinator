@@ -2,6 +2,12 @@
 
 Everything below happens in **Manage** (top navigation). Program members never see these controls.
 
+## Using the AI assistant
+Most forms have a green **✦ … with AI** button: cohorts, startups, members, weekly guide, office hours, announcements, founder updates, startup profiles, mentor profiles and booking questions. Type or paste what you know, then press **Draft it**. Check the draft, press **Put this in the form**, then review and use the form's usual Save, Publish or Preview button. For startups, paste a whole list and save them all at once; no emails go out until you invite founders from each startup's page. The AI can misread names, emails and dates, so check them before saving. It only leaves fields blank when it doesn't know, and it never overwrites what you've typed with a blank.
+
+## Mentors and advisors
+Advisors use the **Mentor / advisor** role: they appear to founders, publish bookable times, and read the published journal (never drafts).
+
 ## Create a cohort (owners)
 Manage → Cohorts → **Create cohort**. Enter the name, Week 1 start date, length (default 12 weeks), timezone and support email, then check the generated week dates. The cohort starts as a **draft**: members can sign in and look around, but posting and booking stay closed. When everything is ready, open the cohort's Overview and press **Activate**.
 

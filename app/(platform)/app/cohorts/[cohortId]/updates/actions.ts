@@ -1,5 +1,6 @@
 "use server";
 
+import { refresh } from "next/cache";
 import { runAction } from "@/lib/server/errors";
 import { act, str } from "@/lib/server/action";
 import { moderateUpdate, saveUpdate, UpdateConflict, type SaveInput } from "@/lib/server/domain/updates";
@@ -15,6 +16,7 @@ export async function saveUpdateAction(cohortId: string, input: SaveInput): Prom
   try {
     const actor = await requireAccount();
     const data = await saveUpdate(actor, cohortId, input);
+    refresh();
     return { ok: true, data };
   } catch (err) {
     if (err instanceof UpdateConflict) return { ok: false, code: "conflict", error: err.message, current: err.current };

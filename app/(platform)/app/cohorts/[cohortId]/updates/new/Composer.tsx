@@ -142,7 +142,6 @@ export function Composer({
           /* ignore */
         }
         setMessage({ tone: "ok", text: r.data.state === "published" ? "Published. It's now visible to your cohort." : "Draft saved." });
-        router.refresh();
       } else {
         if (r.code === "conflict" && r.current) setConflict(r.current);
         setFieldErrors(r.fieldErrors ?? {});

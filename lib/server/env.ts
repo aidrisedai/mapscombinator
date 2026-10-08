@@ -34,6 +34,14 @@ const schema = z
     ORGANIZATION_NAME: z.string().default("MAPS Combinator"),
     RUN_WORKER_IN_PROCESS: z.enum(["true", "false"]).default("true"),
     MAX_UPLOAD_MIB: z.coerce.number().int().min(1).max(100).default(20),
+
+    // AI form assistant (optional). Without a key the assistant panels say
+    // they aren't set up and every form works exactly as before.
+    ANTHROPIC_API_KEY: z.string().optional(),
+    AI_MODEL: z.string().default("claude-opus-5-5"),
+    // "fake" returns canned drafts for development/browser tests only.
+    AI_PROVIDER: z.enum(["anthropic", "fake"]).default("anthropic"),
+    AI_HOURLY_LIMIT: z.coerce.number().int().min(1).max(1000).default(40),
   })
   .superRefine((env, ctx) => {
     const prod = env.APP_ENV === "production" || env.APP_ENV === "staging";
@@ -51,6 +59,8 @@ const schema = z
         ctx.addIssue({ code: "custom", path: ["AUTH_PROVIDER"], message: "must be supabase in staging/production" });
       if (env.STORAGE_PROVIDER !== "supabase")
         ctx.addIssue({ code: "custom", path: ["STORAGE_PROVIDER"], message: "must be supabase in staging/production" });
+      if (env.AI_PROVIDER !== "anthropic")
+        ctx.addIssue({ code: "custom", path: ["AI_PROVIDER"], message: "must be anthropic in staging/production" });
       if (env.EMAIL_PROVIDER !== "resend")
         ctx.addIssue({ code: "custom", path: ["EMAIL_PROVIDER"], message: "must be resend in staging/production" });
       if (!env.APP_URL.startsWith("https://"))

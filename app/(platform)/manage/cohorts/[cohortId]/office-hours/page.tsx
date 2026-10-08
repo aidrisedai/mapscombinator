@@ -10,6 +10,8 @@ import { requirePageAccount } from "@/lib/server/session";
 import { todayIn } from "@/lib/time";
 import { CreateSessionForm } from "./CreateSessionForm";
 import { sessionFormOptions } from "./data";
+import { AiAssistant } from "@/components/ai/AiAssistant";
+import { aiConfigured } from "@/lib/server/ai/assistant";
 
 export const metadata: Metadata = { title: "Manage office hours" };
 
@@ -69,7 +71,12 @@ export default async function ManageOfficeHoursPage({ params, searchParams }: { 
           <SectionTitle>Add session</SectionTitle>
           {writable ? (
             <Card>
-              <CreateSessionForm cohortId={cohortId} hosts={hosts} weeks={weeks} timezone={tz} defaultDate={todayIn(tz)} />
+              <>
+                <AiAssistant kind="session" ctx={{ cohortId }} target="#ai-target-session" configured={aiConfigured()} title="Describe a session for AI" placeholder="e.g. Weekly founder office hours every Thursday 5–6pm on Zoom https://zoom.us/j/123, 6 weeks, hosted by the program team" />
+                <div id="ai-target-session">
+                  <CreateSessionForm cohortId={cohortId} hosts={hosts} weeks={weeks} timezone={tz} defaultDate={todayIn(tz)} />
+                </div>
+              </>
             </Card>
           ) : (
             <p className="text-sm text-ink/70">This cohort is archived, so sessions can&apos;t be added.</p>

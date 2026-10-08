@@ -10,6 +10,8 @@ import { requirePageAccount } from "@/lib/server/session";
 import { formatInstant } from "@/lib/time";
 import { AnnouncementForm } from "./AnnouncementForm";
 import { announcementFormOptions, expiryDate } from "./data";
+import { AiAssistant } from "@/components/ai/AiAssistant";
+import { aiConfigured } from "@/lib/server/ai/assistant";
 
 export const metadata: Metadata = { title: "Manage announcements" };
 
@@ -57,7 +59,12 @@ export default async function ManageAnnouncementsPage({ params }: { params: Prom
             <p className="text-sm text-ink/70">This cohort is archived, so announcements can&apos;t be added.</p>
           ) : (
             <Card>
-              <AnnouncementForm cohortId={cohortId} weeks={options.weeks} sessions={options.sessions} timezone={tz} />
+              <>
+                <AiAssistant kind="announcement" ctx={{ cohortId }} target="#ai-target-announcement" configured={aiConfigured()} title="Write an announcement with AI" placeholder="e.g. Remind everyone demo day is Dec 10 at 6pm at MAPS, 3-minute pitches, slides due Dec 7" />
+                <div id="ai-target-announcement">
+                  <AnnouncementForm cohortId={cohortId} weeks={options.weeks} sessions={options.sessions} timezone={tz} />
+                </div>
+              </>
             </Card>
           )}
         </section>

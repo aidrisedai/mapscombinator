@@ -1,11 +1,18 @@
 import "server-only";
+import { refresh } from "next/cache";
 import { headers } from "next/headers";
 import { runAction } from "./errors";
 import { requireAccount, type Account } from "./session";
 
-/** Server-action wrapper: authenticated actor + safe error mapping. */
+/**
+ * Server-action wrapper: authenticated actor + safe error mapping. On success
+ * it refreshes the client router from the server, in the same response, so
+ * pages update without a second browser-side refresh racing the action.
+ */
 export async function act<T>(fn: (actor: Account) => Promise<T>) {
-  return runAction(async () => fn(await requireAccount()));
+  const r = await runAction(async () => fn(await requireAccount()));
+  if (r.ok) refresh();
+  return r;
 }
 
 export async function clientIp() {
