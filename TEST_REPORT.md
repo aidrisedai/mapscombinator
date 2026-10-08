@@ -12,7 +12,7 @@ Date: 2026-10-02. Environment: cloud dev container, Node 22.22, Postgres 16.10 (
 |---|---|
 | `npm run lint` | ✅ 0 problems |
 | `npm run typecheck` | ✅ 0 errors |
-| `npm test` (Vitest + real Postgres) | ✅ 6 files, 25 tests passed |
+| `npm test` (Vitest + real Postgres) | ✅ 8 files, 33 tests passed (latest run) |
 | `npm run build` | ✅ succeeded (all platform routes dynamic; marketing pages static) |
 | `npm run e2e` against `npm run dev` | ✅ 18/18 steps |
 | `npm run e2e` against the **production build** (`npm run start`) | ✅ 18/18 steps |
@@ -70,6 +70,18 @@ Fixed in this pass:
 - **Not verified live:** no Anthropic key was available, so a real model call hasn't been made. Browser tests used a development-only fake provider (`AI_PROVIDER=fake`, refused in staging/production). The browser test filled and saved each section through its own button: cohort, bulk startups (edit + save, no emails), invite (normal preview, nothing sent), week, office-hours series, announcement, daily (controlled inputs), weekly, startup profile, mentor profile and booking question.
 - **Fixed: actions intermittently stuck on "Updating…".** This was present in the deployed version: about 45% of the time, clicking Activate right after creating a cohort hung, even though the server applied the change. The cause was the platform-wide `loading.tsx` Suspense boundary combined with server-action responses. Removing it took the hang rate to 0/8 in a targeted probe, and the walkthrough now passes 18/18 repeatedly. Page refreshes after actions now happen on the server (`refresh()` in `act()`) instead of a second browser-side refresh.
 - **Fixed: blank AI fields could wipe existing form values.** Blanks are now skipped.
+
+## Mentor profiles pass (2026-10-08)
+
+- New migration `004_mentor_profile_details.sql`: headline, LinkedIn, calendar link, interests, contact email, phone.
+- `tests/mentors.test.ts` (4 tests) covers:
+  - saving every field, with `linkedin.com/in/x` normalised to https;
+  - rejecting non-LinkedIn hosts (including look-alikes such as `linkedin.com.evil.example`), `javascript:` and `http:` calendar links, bad emails and phones;
+  - founders in the mentor's cohort see contact details, and founders of other cohorts can't list or open the mentor;
+  - admins can edit a profile on the mentor's behalf, but not their name, and founders can't edit it.
+- `npm test`: 8 files, 33 tests passed. Lint and typecheck: clean. Production build: succeeded.
+- `npm run e2e` against the production build: 18/18 steps. Step 16 now checks that a mentor lands on their profile with a welcome note after accepting, and saves the new fields. Step 17 checks that the founder sees the headline on the Mentors tab, and the LinkedIn, calendar and contact details on the mentor page.
+- `scripts/crawl.mjs` (signed out, owner, founder and mentor; 1280 px and 390 px): 286 page loads, 0 problems.
 
 ## Acceptance matrix
 

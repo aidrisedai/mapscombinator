@@ -119,8 +119,10 @@ export async function getCohortForAdmin(actor: Account, cohortId: string) {
 
 /** Cohort admins/mentors/viewers for the Members screen. */
 export async function listCohortRoles(cohortId: string) {
-  return sql()`select r.id, r.role, r.created_at, a.id as account_id, a.display_name, a.email, a.state
+  return sql()`select r.id, r.role, r.created_at, a.id as account_id, a.display_name, a.email, a.state,
+                      p.headline, p.bio, p.expertise, p.linkedin_url
                from cohort_roles r join accounts a on a.id = r.account_id
+               left join mentor_profiles p on p.account_id = a.id and r.role = 'mentor'
                where r.cohort_id = ${cohortId} and r.active order by r.role, a.display_name`;
 }
 

@@ -34,7 +34,14 @@ Cohort → **Office hours** → **Add session**. For a weekly series, tick *Repe
 To change one date, edit it with *This occurrence*. To change all remaining dates, choose *This and future occurrences*; past sessions are never changed. **Cancel** keeps the session visible as cancelled, and offers a cancellation email (pre-checked if that session was emailed before).
 
 ## Mentors
-Cohort → **Members** → invite with role *Mentor*. After they accept, mentors set their own profile and availability under **Mentor**. From the Members list you can also manage a mentor's availability on their behalf; changes are attributed to you. One mentor can serve several cohorts with one calendar, and the platform prevents double bookings across cohorts. The platform doesn't read external calendars, so mentors must block time they can't attend.
+Cohort → **Members** → invite with role *Mentor / advisor*. The invitation email tells them they'll set up a profile. After they accept, they land on **Mentor → Profile** with a welcome note and fill in:
+- headline, short bio, areas of expertise and interests (the startups or problems they want to help with);
+- LinkedIn link (`linkedin.com/in/…` without `https://` is fine) and a calendar link (Calendly, Cal.com, Google booking page);
+- optional contact email and phone. These are shown only to founders and the program team in the cohorts that mentor is assigned to, never to other cohorts. The contact email doesn't change their sign-in email.
+
+Mentors can paste their LinkedIn "About" section into **Write your profile with AI** to draft it. Founders see everyone under the cohort's new **Mentors** tab, and the full profile, links and contact details on each mentor's page next to the booking times.
+
+On the Members page, mentors missing a headline, bio, expertise or LinkedIn show a **Profile incomplete** badge. Use **Profile** next to their name to fill it in on their behalf (only the mentor can change their own name); changes are attributed to you. You can manage their availability the same way. One mentor can serve several cohorts with one calendar, and the platform prevents double bookings across cohorts. The platform doesn't read external calendars, so mentors must block time they can't attend.
 
 ## Bookings and cancellations
 Cohort → **Bookings**: set the allowed durations, booking horizon, cancellation window and per-startup limit. Changes apply to new bookings only. The list shows every appointment. Open one to cancel or reschedule it with a reason, which overrides the founder window and is recorded in the audit log. Mentors and founders get the cancellation/reschedule emails automatically.

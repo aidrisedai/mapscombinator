@@ -38,7 +38,7 @@ const DRAFTS = {
   daily: z.object({ moved: s, next: s, blockers: s, link: s }),
   weekly: z.object({ accomplished: s, learned: s, nextCommitments: s, blockers: s, link: s }),
   startupProfile: z.object({ name: s, description: s, website: s }),
-  mentorProfile: z.object({ bio: s, expertise: s, meetingInstructions: s }),
+  mentorProfile: z.object({ headline: s, bio: s, expertise: s, interests: s, linkedinUrl: s, calendarUrl: s, meetingInstructions: s }),
   booking: z.object({ topic: s, helpNeeded: s }),
 } as const;
 
@@ -55,7 +55,7 @@ const INSTRUCTIONS: Record<AiKind, string> = {
   daily: `Help a founder write today's short daily update in their own voice, from their notes. moved: what moved forward today (≤${LIMITS.daily.moved}); next: what's next (≤${LIMITS.daily.next}); blockers: where they need help, or empty (≤${LIMITS.daily.blockers}); link: an https:// evidence/demo link only if they gave one. Keep it concrete and brief; don't add accomplishments they didn't mention.`,
   weekly: `Help a founding team write their weekly summary from their notes and the daily updates in context. accomplished (≤${LIMITS.weekly.accomplished}), learned (≤${LIMITS.weekly.learned}), nextCommitments (≤${LIMITS.weekly.nextCommitments}), blockers (≤${LIMITS.weekly.blockers}), link (https or empty). Use "- " bullets where it helps. Only state what the notes support.`,
   startupProfile: `Draft the startup's public profile: name ≤120 chars; description ≤500 chars, plain and specific (who it helps and how); website a full https:// URL or empty.`,
-  mentorProfile: `Draft a mentor/advisor profile: bio ≤1500 chars in the first person or third person as the user prefers; expertise is a comma-separated list of up to 12 short tags; meetingInstructions ≤1000 chars (how founders should prepare or join).`,
+  mentorProfile: `Draft a mentor/advisor profile: headline is one line ≤160 chars (current role · notable past role); interests ≤1000 chars: the kinds of startups, sectors or problems they want to help with; linkedinUrl and calendarUrl are full https:// links only if the person gave them, else empty (never invent links); bio ≤1500 chars in the first person or third person as the user prefers; expertise is a comma-separated list of up to 12 short tags; meetingInstructions ≤1000 chars (how founders should prepare or join).`,
   booking: `Help a founder prepare their question for a mentor appointment. topic: one scannable line ≤200 chars; helpNeeded ≤2000: context, what they've tried, and the decision they face.`,
 };
 
@@ -170,7 +170,7 @@ const FAKE: Record<AiKind, Record<string, unknown>> = {
   daily: { moved: "Talked to two clinics; both want shift swaps.", next: "Build the swap screen.", blockers: "Waiting on Twilio approval.", link: "" },
   weekly: { accomplished: "- Five interviews\n- Pricing test", learned: "Clinics pay per site, not per seat.", nextCommitments: "- Pilot with one clinic", blockers: "", link: "" },
   startupProfile: { name: "", description: "We help neighborhood clinics fill volunteer shifts in minutes.", website: "" },
-  mentorProfile: { bio: "Former founder; advises on fundraising and pricing.", expertise: "fundraising, pricing, B2B sales", meetingInstructions: "Send your deck the day before." },
+  mentorProfile: { headline: "Partner, Cascade Ventures · ex-founder", bio: "Former founder; advises on fundraising and pricing.", expertise: "fundraising, pricing, B2B sales", interests: "Health and climate startups selling to cities.", linkedinUrl: "", calendarUrl: "", meetingInstructions: "Send your deck the day before." },
   booking: { topic: "Pricing our clinic pilot", helpNeeded: "Per-seat vs per-shift pricing; we tried per-seat and clinics balked." },
 };
 

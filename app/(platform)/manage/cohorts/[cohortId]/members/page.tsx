@@ -1,3 +1,4 @@
+import { profileGaps } from "@/lib/server/domain/mentors";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ActionButton } from "@/components/ui/forms";
@@ -77,7 +78,9 @@ export default async function MembersPage({ params }: { params: Promise<{ cohort
                           {r.display_name as string}
                           {r.state === "suspended" && <Badge tone="danger">Suspended</Badge>}
                           {r.account_id === account.id && <Badge tone="neutral">You</Badge>}
+                          {g.role === "mentor" && profileGaps(r).length > 0 && <Badge tone="warn">Profile incomplete</Badge>}
                         </p>
+                        {g.role === "mentor" && r.headline && <p className="text-xs text-ink/70">{r.headline as string}</p>}
                         <p className="break-all text-xs text-ink/60">{r.email as string}</p>
                         <p className="text-xs text-ink/50">Since {formatInstant(r.created_at as Date, tz)}</p>
                       </div>

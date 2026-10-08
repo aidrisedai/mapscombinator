@@ -295,7 +295,7 @@ try {
 
   if (process.env.E2E_SKIP_BOOKING !== "1") {
     let mentorPage;
-    await step("admin invites a mentor; mentor publishes availability", async () => {
+    await step("admin invites a mentor; mentor fills profile and publishes availability", async () => {
       await owner.goto(`${cohortUrl}/members`);
       await owner.getByLabel(/^Role/).selectOption({ value: "mentor" });
       await owner.getByLabel(/^Name/).last().fill("Maya Mentor");
@@ -309,7 +309,18 @@ try {
       await mentorPage.getByLabel(/^Password/).fill(PW);
       await mentorPage.getByLabel(/^Confirm password/).fill(PW);
       await mentorPage.getByRole("button", { name: /Create account/ }).click();
-      await mentorPage.waitForURL(/\/mentor\//);
+      await mentorPage.waitForURL(/\/mentor\/profile\?welcome=1/);
+      await mentorPage.getByText(/Welcome to/).first().waitFor();
+      await mentorPage.getByLabel(/^Headline/).fill("Partner, Cascade Ventures");
+      await mentorPage.getByLabel(/^LinkedIn profile/).fill("linkedin.com/in/maya-mentor");
+      await mentorPage.getByLabel(/^Areas of expertise/).fill("Pricing, Fundraising");
+      await mentorPage.getByLabel(/^Interests/).fill("Health startups selling to clinics");
+      await mentorPage.getByLabel(/^Calendar link/).fill("https://calendly.com/maya-mentor");
+      await mentorPage.getByLabel(/^Contact email/).fill("maya.public@example.org");
+      await mentorPage.getByLabel(/^Phone/).fill("+1 206 555 0100");
+      await mentorPage.getByRole("button", { name: /Save profile/ }).click();
+      await mentorPage.getByText("Profile saved.").waitFor();
+      await shot(mentorPage, "12z-mentor-profile");
       await mentorPage.goto(`${BASE}/mentor/availability`);
       const day = new Date(Date.parse(today) + 3 * 86400000).toISOString().slice(0, 10);
       const rule = mentorPage.locator("form").filter({ has: mentorPage.getByRole("button", { name: /Preview times/ }) });
@@ -330,9 +341,14 @@ try {
     });
 
     let bookingUrl = "";
-    await step("founder books a mentor; confirmation persists and both get email", async () => {
-      await founder.goto(`${BASE}/app/cohorts/${cohortId}/office-hours?tab=mentors`);
+    await step("founder sees mentor profile and contact, books; confirmation persists and both get email", async () => {
+      await founder.goto(`${BASE}/app/cohorts/${cohortId}/mentors`);
+      await founder.getByText("Partner, Cascade Ventures").first().waitFor();
       await founder.getByRole("link", { name: /Maya Mentor/ }).first().click();
+      await founder.getByRole("link", { name: /LinkedIn profile/ }).waitFor();
+      if ((await founder.getByRole("link", { name: /LinkedIn profile/ }).getAttribute("href")) !== "https://linkedin.com/in/maya-mentor") throw new Error("LinkedIn link not normalised");
+      await founder.getByRole("link", { name: "maya.public@example.org" }).waitFor();
+      await shot(founder, "13c-founder-mentor-profile");
       await founder.getByRole("radio").first().check({ force: true });
       await founder.waitForTimeout(800);
       await founder.getByRole("button", { name: /^Continue$/ }).click();

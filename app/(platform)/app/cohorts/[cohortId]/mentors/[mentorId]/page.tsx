@@ -8,6 +8,7 @@ import { toSlotView, type SlotView } from "@/components/office-hours/slots";
 import { BookingFlow } from "./BookingFlow";
 import { AiAssistant } from "@/components/ai/AiAssistant";
 import { aiConfigured } from "@/lib/server/ai/assistant";
+import { MentorLinks } from "@/components/mentors/MentorLinks";
 
 export const metadata: Metadata = { title: "Mentor" };
 
@@ -19,13 +20,13 @@ export default async function MentorPage({ params }: { params: Promise<{ cohortI
   const tags = (mentor.expertise as string[] | null) ?? [];
   const isFounder = access.founderOf.length > 0;
   const open = access.cohort.status === "active";
-  const backHref = `/app/cohorts/${cohortId}/office-hours?tab=mentors`;
+  const backHref = `/app/cohorts/${cohortId}/mentors`;
   return (
     <>
       <p className="mb-2 text-sm">
         <Link href={backHref} className="font-medium text-emerald hover:text-forest">← All mentors</Link>
       </p>
-      <PageHeader eyebrow="Mentor" title={mentor.display_name} />
+      <PageHeader eyebrow="Mentor / advisor" title={mentor.display_name} description={mentor.headline || undefined} />
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
         <div className="space-y-5">
           <Card>
@@ -37,8 +38,21 @@ export default async function MentorPage({ params }: { params: Promise<{ cohortI
               </ul>
             )}
             {mentor.bio ? <Prose text={mentor.bio} /> : <p className="text-sm text-ink/60">This mentor hasn&apos;t added a bio yet.</p>}
+            {mentor.interests && (
+              <div className="mt-4">
+                <h2 className="text-sm font-semibold text-ink">Interested in</h2>
+                <Prose text={mentor.interests} />
+              </div>
+            )}
             {mentor.timezone && <p className="mt-4 text-xs text-ink/60">Usually works in {String(mentor.timezone).replaceAll("_", " ")}.</p>}
           </Card>
+          {(mentor.linkedin_url || mentor.calendar_url || mentor.contact_email || mentor.phone) && (
+            <Card>
+              <h2 className="mb-2 text-sm font-semibold text-ink">Links and contact</h2>
+              <MentorLinks m={mentor} contact />
+              {(mentor.contact_email || mentor.phone) && <p className="mt-3 text-xs text-ink/60">Shared with this cohort only. Please keep it within the program.</p>}
+            </Card>
+          )}
           <Notice tone="info" title="How availability works">
             The times shown are managed on this platform by the mentor and the program team. No external calendar is checked. A time is reserved only once your booking is confirmed.
           </Notice>

@@ -83,7 +83,7 @@ export async function availableSlots(cohortId: string, opts: { mentorId?: string
 export async function listCohortMentors(actor: Account, cohortId: string) {
   const a = await requireCohortRead(actor, cohortId);
   const mentors = await sql()`
-    select a.id, a.display_name, p.bio, p.expertise, p.timezone
+    select a.id, a.display_name, p.headline, p.bio, p.expertise, p.interests, p.linkedin_url, p.calendar_url, p.timezone
     from cohort_roles r join accounts a on a.id = r.account_id and a.state = 'active'
     left join mentor_profiles p on p.account_id = a.id
     where r.cohort_id = ${cohortId} and r.role = 'mentor' and r.active order by a.display_name`;
@@ -100,7 +100,8 @@ export async function listCohortMentors(actor: Account, cohortId: string) {
 export async function getCohortMentor(actor: Account, cohortId: string, mentorId: string) {
   const a = await requireCohortRead(actor, cohortId);
   const [m] = await sql()`
-    select a.id, a.display_name, p.bio, p.expertise, p.timezone, p.meeting_instructions
+    select a.id, a.display_name, p.headline, p.bio, p.expertise, p.interests, p.linkedin_url, p.calendar_url, p.contact_email, p.phone,
+           p.timezone, p.meeting_instructions
     from cohort_roles r join accounts a on a.id = r.account_id left join mentor_profiles p on p.account_id = a.id
     where r.cohort_id = ${cohortId} and r.account_id = ${mentorId} and r.role = 'mentor' and r.active`;
   if (!m) throw notFound("That mentor isn't available in this cohort.");

@@ -80,6 +80,9 @@ export function render(template: TemplateName, p: P, s: P = {}): Rendered {
         [
           { p: `${p.inviter} invited you to join ${org} as a ${ROLE_LABEL[p.role ?? ""] ?? p.role}.` },
           { kv: [["Cohort", p.cohort], ["Startup", p.startup], ["Role", ROLE_LABEL[p.role ?? ""] ?? p.role], ["Invitation expires", p.expires]] },
+          ...(p.role === "mentor"
+            ? [{ p: "After you set your password, you'll add a short profile (headline, LinkedIn, what you can help with and how to reach you) so founders can get to know you, then publish the times they can book." }]
+            : []),
           { button: { label: "Set up your account", url: s.link ?? "" } },
           { small: `This invitation is for ${p.email} only. If you weren't expecting it, you can ignore this email.` },
         ],

@@ -1,7 +1,7 @@
 import "server-only";
 import { z } from "zod";
 import { addDays, formatTimeRange, hhmmOf, isIsoDate, isLocalTime, isValidTimezone, localDateOf, minutesOf, resolveLocal, todayIn, weekdayOf } from "@/lib/time";
-import { optionalHttps, text } from "@/lib/validation";
+import { optionalHttps, safeHttpsUrl, text } from "@/lib/validation";
 import { audit } from "../audit";
 import { cohortAccess } from "../authz";
 import { pgCode, sql, tx, type Db, type Tx } from "../db";
@@ -49,14 +49,68 @@ export async function getMentorContext(actor: Account, mentorId: string) {
 
 // ───────────────────────────── Profile ─────────────────────────────────────
 
+/** Accepts "linkedin.com/in/x" as well as full links; stored as https only. */
+const friendlyHttps = (label: string, host?: RegExp) =>
+  z
+    .string()
+    .optional()
+    .transform((v, ctx) => {
+      const raw = (v ?? "").trim();
+      const r = safeHttpsUrl(raw && !/^[a-z]+:/i.test(raw) ? `https://${raw}` : raw);
+      if (!r.ok || (r.url && host && !host.test(new URL(r.url).hostname))) {
+        ctx.addIssue({ code: "custom", message: host ? `Use your ${label} link, e.g. https://www.linkedin.com/in/your-name` : `Use a full https:// link for your ${label}.` });
+        return z.NEVER;
+      }
+      return r.url;
+    });
+
 const profileSchema = z.object({
   displayName: text(120, "Name").optional(),
+  headline: text(160, "Headline").default(""),
   bio: text(1500, "Bio").default(""),
   expertise: z.string().default("").transform((s) => [...new Set(s.split(",").map((x) => x.trim()).filter(Boolean))].slice(0, 12).map((x) => x.slice(0, 40))),
+  interests: text(1000, "Interests").default(""),
+  linkedinUrl: friendlyHttps("LinkedIn", /(^|\.)linkedin\.com$/i),
+  calendarUrl: friendlyHttps("calendar"),
+  contactEmail: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .optional()
+    .transform((v, ctx) => {
+      if (!v) return null;
+      if (v.length > 254 || !z.email().safeParse(v).success) {
+        ctx.addIssue({ code: "custom", message: "Enter a valid email address, or leave it blank." });
+        return z.NEVER;
+      }
+      return v;
+    }),
+  phone: z
+    .string()
+    .trim()
+    .optional()
+    .transform((v, ctx) => {
+      if (!v) return null;
+      if (v.length > 40 || !/^\+?[0-9 ().-]{6,}$/.test(v) || (v.match(/[0-9]/g)?.length ?? 0) < 6) {
+        ctx.addIssue({ code: "custom", message: "Enter a phone number with digits only (spaces, +, - and brackets are fine), or leave it blank." });
+        return z.NEVER;
+      }
+      return v;
+    }),
   timezone: z.string().refine(isValidTimezone, "Choose a valid timezone."),
   meetingUrl: optionalHttps,
   meetingInstructions: text(1000, "Meeting instructions").default(""),
 });
+
+/** Profile fields founders rely on when choosing a mentor. */
+export function profileGaps(p: Record<string, unknown> | null | undefined): string[] {
+  const gaps: string[] = [];
+  if (!p?.headline) gaps.push("headline");
+  if (!p?.bio) gaps.push("bio");
+  if (!((p?.expertise as string[] | undefined) ?? []).length) gaps.push("expertise");
+  if (!p?.linkedin_url) gaps.push("LinkedIn");
+  return gaps;
+}
 
 export async function getMentorProfile(mentorId: string) {
   const [p] = await sql()`select p.*, a.display_name, a.email from mentor_profiles p join accounts a on a.id = p.account_id where p.account_id = ${mentorId}`;
@@ -67,9 +121,13 @@ export async function updateMentorProfile(actor: Account, mentorId: string, inpu
   const v = parse(profileSchema, input);
   await tx(async (t) => {
     const m = await requireMentorManager(actor, mentorId, t);
-    await t`insert into mentor_profiles (account_id, bio, expertise, timezone, meeting_url, meeting_instructions, updated_by)
-            values (${mentorId}, ${v.bio}, ${v.expertise}, ${v.timezone}, ${v.meetingUrl}, ${v.meetingInstructions}, ${actor.id})
-            on conflict (account_id) do update set bio = excluded.bio, expertise = excluded.expertise, timezone = excluded.timezone,
+    await t`insert into mentor_profiles (account_id, headline, bio, expertise, interests, linkedin_url, calendar_url, contact_email, phone,
+                                         timezone, meeting_url, meeting_instructions, updated_by)
+            values (${mentorId}, ${v.headline}, ${v.bio}, ${v.expertise}, ${v.interests}, ${v.linkedinUrl}, ${v.calendarUrl}, ${v.contactEmail}, ${v.phone},
+                    ${v.timezone}, ${v.meetingUrl}, ${v.meetingInstructions}, ${actor.id})
+            on conflict (account_id) do update set headline = excluded.headline, bio = excluded.bio, expertise = excluded.expertise,
+              interests = excluded.interests, linkedin_url = excluded.linkedin_url, calendar_url = excluded.calendar_url,
+              contact_email = excluded.contact_email, phone = excluded.phone, timezone = excluded.timezone,
               meeting_url = excluded.meeting_url, meeting_instructions = excluded.meeting_instructions, updated_by = excluded.updated_by, updated_at = now()`;
     if (m.self && v.displayName) await t`update accounts set display_name = ${v.displayName} where id = ${mentorId}`;
     await audit(t, { actorId: actor.id, action: "mentor.profile_update", objectType: "account", objectId: mentorId, summary: { onBehalf: !m.self } });

@@ -276,7 +276,7 @@ export function landingFor(row: Record<string, unknown>) {
   const inv = row as { role: string; cohort_id: string | null; enrollment_id: string | null };
   if (inv.role === "owner") return "/manage/cohorts";
   if (inv.role === "admin") return `/manage/cohorts/${inv.cohort_id}`;
-  if (inv.role === "mentor") return "/mentor/appointments";
+  if (inv.role === "mentor") return "/mentor/profile?welcome=1";
   if (inv.role === "founder") return `/app/cohorts/${inv.cohort_id}?team=${inv.enrollment_id}&welcome=1`;
   return `/app/cohorts/${inv.cohort_id}/journal`;
 }
