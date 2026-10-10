@@ -11,6 +11,7 @@ import { render } from "../email/templates";
 import { env } from "../env";
 import { conflict, forbidden, invalid, notFound } from "../errors";
 import type { Account } from "../session";
+import { invitationCopy, queueWelcome } from "./emails";
 import { getOrganization } from "./organization";
 import { parse } from "./validate";
 
@@ -80,7 +81,8 @@ export async function previewInvitation(actor: Account, input: InviteInput) {
   const expiresAt = new Date(Date.now() + org.invitationValidDays * 86400_000);
   const tz = cohort?.timezone ?? "America/Los_Angeles";
   const ctx = { org: org.name, support: cohort?.supportEmail ?? org.supportEmail, cohort: cohort?.name ?? null, startup, inviter: actor.displayName, expires: formatInstant(expiresAt, tz) };
-  const msg = render("invitation", payloadFor(v.email, v.role, ctx), { link: `${env().APP_URL}/accept-invitation#•••` });
+  const copy = await invitationCopy(db, { role: v.role, cohortId: v.cohortId ?? null, organizationId: actor.organizationId, name: v.name, startup, inviter: actor.displayName });
+  const msg = render("invitation", { ...payloadFor(v.email, v.role, ctx), ...copy }, { link: `${env().APP_URL}/accept-invitation#•••` });
   return { to: v.email, role: v.role, cohort: cohort?.name ?? null, startup, subject: msg.subject, text: msg.text, alreadyHasAccess: await alreadyHasAccess(db, v) };
 }
 
@@ -112,7 +114,10 @@ async function issue(t: Tx, actor: Account | null, invitationId: string, sendNum
     to: inv.email,
     cohortId: inv.cohort_id,
     authorizedBy: actor?.id ?? null,
-    payload: payloadFor(inv.email, inv.role, ctx),
+    payload: {
+      ...payloadFor(inv.email, inv.role, ctx),
+      ...(await invitationCopy(t, { role: inv.role, cohortId: inv.cohort_id, organizationId: inv.organization_id, name: inv.invitee_name, startup: inv.startup_name, inviter: ctx.inviter })),
+    },
     secret: { link: `${env().APP_URL}/accept-invitation#${token}` },
     related: { type: "invitation", id: invitationId },
     idempotencyKey: `invitation:${invitationId}:${sendNumber}`,
@@ -267,6 +272,7 @@ export async function consumeInvitation(t: Tx, token: string, account: { id: str
       if (inv.role === "mentor") await t`insert into mentor_profiles (account_id) values (${account.id}) on conflict do nothing`;
   }
   await t`update invitations set state = 'accepted', accepted_at = now(), accepted_account_id = ${account.id} where id = ${inv.id}`;
+  await queueWelcome(t, inv, account.id);
   await audit(t, { actorId: account.id, action: "invitation.accept", objectType: "invitation", objectId: inv.id, cohortId: inv.cohort_id, summary: { role: inv.role } });
   return inv;
 }

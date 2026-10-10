@@ -33,6 +33,23 @@ Cohort → **Office hours** → **Add session**. For a weekly series, tick *Repe
 
 To change one date, edit it with *This occurrence*. To change all remaining dates, choose *This and future occurrences*; past sessions are never changed. **Cancel** keeps the session visible as cancelled, and offers a cancellation email (pre-checked if that session was emailed before).
 
+## Emails (acceptance, welcome and messages to startups)
+Cohort → **Emails**.
+
+**Automatic emails** go out on their own. You can edit the wording for each cohort:
+- **Acceptance + invitation (founders):** sent when you invite a founder or cofounder. It congratulates them and includes the **Set up your account** button, so they know to create their account.
+- **Welcome (founders):** sent right after a founder sets up their account.
+- **Invitation** and **Welcome (mentors & advisors):** the same pair for advisors.
+
+Use placeholders such as `{first_name}`, `{startup_name}`, `{cohort_name}`, `{start_date}` and `{inviter_name}`; the page lists them all. The platform always adds the setup button and expiry note itself, so they can't be removed by mistake. **Preview** shows the email filled in for a real startup, and **Send test to me** emails you a copy. **Reset to standard** goes back to the built-in text. Resending an invitation uses the latest wording.
+
+**Email startups:**
+- Choose all startups, pick some, or "startups that haven't posted this week's weekly summary". Optionally add the cohort's mentors, or a copy to yourself.
+- Write the subject and message (or use **Write this email with AI**), then press **Preview recipients and email**. You see everyone who will get it and exactly how it looks. Press **Send**.
+- Each person gets their own personalised email; nobody sees the other addresses. Replies go to the cohort's support email.
+- A startup whose founders haven't set up accounts yet gets the email at its contact address, without a platform button.
+- Save messages you reuse as templates. **Sent emails** shows delivery counts; each startup's page lists the emails it was sent; **Delivery** has per-person detail and retries.
+
 ## Advisors tab (onboarding advisors)
 Cohort → **Advisors**:
 - **Invite advisors:** paste one per line (`Name, email`; spreadsheet rows work), press **Preview**, check the list, then **Confirm**. New people get an invitation to set up their account. People who already have an account, for example from an earlier cohort, are added straight away and get a short "you've been added" email. They never sign up twice. Running the same list again doesn't duplicate anything.

@@ -13,6 +13,7 @@ export function ManageTabs({ base }: { base: string }) {
     { key: "weeks", href: `${base}/weeks`, label: "Weekly guide" },
     { key: "office-hours", href: `${base}/office-hours`, label: "Office hours" },
     { key: "announcements", href: `${base}/announcements`, label: "Announcements" },
+    { key: "emails", href: `${base}/emails`, label: "Emails" },
     { key: "bookings", href: `${base}/bookings`, label: "Bookings" },
     { key: "delivery", href: `${base}/delivery`, label: "Delivery" },
     { key: "settings", href: `${base}/settings`, label: "Settings" },

@@ -5,6 +5,7 @@ import { ActionButton, ActionForm } from "@/components/ui/forms";
 import { Badge, Card, ExternalLink, Notice, PageHeader, SectionTitle } from "@/components/ui/primitives";
 import { isUuid, requireCohortAdmin } from "@/lib/server/authz";
 import { listInvitations } from "@/lib/server/domain/invitations";
+import { listMessages } from "@/lib/server/domain/emails";
 import { getEnrollment, listContacts } from "@/lib/server/domain/startups";
 import { load, one } from "@/lib/server/page";
 import { requirePageAccount } from "@/lib/server/session";
@@ -23,7 +24,7 @@ export default async function StartupDetailPage({ params, searchParams }: { para
   const { cohort } = await load(() => requireCohortAdmin(account, cohortId));
   if (!isUuid(enrollmentId)) notFound();
   const { enrollment: e, members } = await load(() => getEnrollment(account, cohort.id, enrollmentId));
-  const [contacts, invitations] = await Promise.all([listContacts(cohort.id, e.id), listInvitations(cohort.id, e.id)]);
+  const [contacts, invitations, messages] = await Promise.all([listContacts(cohort.id, e.id), listInvitations(cohort.id, e.id), listMessages(account, cohort.id, { enrollmentId: e.id, limit: 20 })]);
   const base = `/manage/cohorts/${cohort.id}`;
   const tz = cohort.timezone;
   const active = e.status === "active";
@@ -144,6 +145,22 @@ export default async function StartupDetailPage({ params, searchParams }: { para
         <SectionTitle>Invitations</SectionTitle>
         <p className="mb-3 text-xs text-ink/60">Resend creates a fresh link; earlier links stop working. &ldquo;Sent&rdquo; means the email provider accepted the message, which isn&apos;t proof it reached the inbox.</p>
         <InvitationList rows={invitations} timezone={tz} canManage={() => writable} empty="No invitations yet." />
+      </Card>
+
+      <Card>
+        <SectionTitle action={writable ? <Link href={`${base}/emails`} className="text-sm font-medium text-emerald hover:text-forest">Send an email →</Link> : undefined}>Emails sent to this startup</SectionTitle>
+        {messages.length === 0 ? (
+          <p className="text-sm text-ink/60">No emails sent from the Emails page yet.</p>
+        ) : (
+          <ul className="divide-y divide-line/60">
+            {messages.map((m) => (
+              <li key={m.id as string} className="py-2 text-sm first:pt-0">
+                <span className="font-medium">{m.subject as string}</span>
+                <span className="block text-xs text-ink/60">{formatInstant(m.created_at as Date, tz)} · {m.sender as string}</span>
+              </li>
+            ))}
+          </ul>
+        )}
       </Card>
 
       {active && writable && (

@@ -8,7 +8,7 @@ import { buttonClass, cx } from "@/components/ui/primitives";
 
 type Kind =
   | "cohort" | "startups" | "invites" | "week" | "session" | "announcement"
-  | "daily" | "weekly" | "startupProfile" | "mentorProfile" | "booking";
+  | "daily" | "weekly" | "startupProfile" | "mentorProfile" | "booking" | "email";
 type Ctx = { cohortId?: string; enrollmentId?: string; mentorId?: string; weekNumber?: number };
 type Turn = { role: "user" | "assistant"; content: string };
 type Draft = Record<string, unknown>;

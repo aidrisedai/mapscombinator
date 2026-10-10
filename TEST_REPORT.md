@@ -12,7 +12,7 @@ Date: 2026-10-02. Environment: cloud dev container, Node 22.22, Postgres 16.10 (
 |---|---|
 | `npm run lint` | ✅ 0 problems |
 | `npm run typecheck` | ✅ 0 errors |
-| `npm test` (Vitest + real Postgres) | ✅ 9 files, 37 tests passed (latest run) |
+| `npm test` (Vitest + real Postgres) | ✅ 10 files, 43 tests passed (latest run) |
 | `npm run build` | ✅ succeeded (all platform routes dynamic; marketing pages static) |
 | `npm run e2e` against `npm run dev` | ✅ 18/18 steps |
 | `npm run e2e` against the **production build** (`npm run start`) | ✅ 18/18 steps |
@@ -95,6 +95,21 @@ Fixed in this pass:
 - `npm run e2e`: 19/19 steps. The new step checks that a mentor sees team progress, and that a second cohort adds that mentor without a new sign-up while inviting a new advisor (both emails checked).
 - `scripts/crawl.mjs`: 288 page loads across roles at 1280 px and 390 px, 0 problems.
 - Note: this pass ran against `next dev`. The production build couldn't run in this container because Google Fonts was blocked by the network (HTTP 403). The deploy build on Railway has normal internet access.
+
+## Custom emails pass (2026-10-10)
+
+- New migration `005_custom_emails.sql` (per-cohort templates, saved templates, messages) and **Manage → Emails**.
+- The founder invitation is now an acceptance email that includes the account setup button. Welcome emails go out after account setup, for founders and mentors.
+- `tests/emails.test.ts` (6 tests) covers:
+  - placeholders merge correctly, typos are flagged, and HTML is escaped, with lists and links rendered;
+  - the acceptance wording is used in invitations (standard and custom, and Resend picks up edits), while the setup link and expiry are always kept;
+  - exactly one welcome email per founder or mentor, and none for admins;
+  - only this cohort's admins can edit templates;
+  - messages are personalised per person and sent once per retry key; startups without founder accounts get their contact email with no button; mentors are included only when asked; "selected" and "missing weekly summary" audiences work; admins of other cohorts are refused.
+- `npm test`: 10 files, 43 tests passed. Lint and typecheck: clean.
+- `npm run e2e` (dev server): 20/20 steps. The founder now receives the acceptance email, and a new step covers the welcome email, editing and previewing the acceptance email, and sending a personalised message to all startups.
+- Crawl: 290 page loads, 0 problems.
+- **Fixed during testing:** browsers send line breaks in form text as `\r\n`, which stopped "- " lines from becoming bullet points. Line endings are now normalised.
 
 ## Acceptance matrix
 

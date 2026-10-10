@@ -32,7 +32,7 @@ export async function enqueueEmail(db: Db, m: EnqueueInput): Promise<string | nu
   return (rows[0]?.id as string) ?? null;
 }
 
-const BROADCAST_EVENTS = new Set(["week_published", "announcement", "session_published", "session_changed", "session_cancelled"]);
+const BROADCAST_EVENTS = new Set(["week_published", "announcement", "session_published", "session_changed", "session_cancelled", "message"]);
 const MAX_ATTEMPTS = 6;
 
 /** Recipient of a cohort broadcast must still be an active member at send time. */

@@ -136,10 +136,10 @@ try {
 
   const founder = await newPage();
   let founderInviteLink = "";
-  await step("founder receives the invitation email (dev mail log)", async () => {
-    const m = await waitForMail(founderEmail, "invited");
+  await step("founder receives the acceptance + invitation email (dev mail log)", async () => {
+    const m = await waitForMail(founderEmail, "accepted into");
     founderInviteLink = linkIn(m);
-    if (!m.text.includes("Founder") && !m.text.includes("founder")) throw new Error("role missing from email");
+    if (!m.text.includes("Set up your account")) throw new Error("acceptance email lacks the setup button");
   });
 
   await step("founder sets a password without ChatGPT or a platform-sharing step", async () => {
@@ -234,7 +234,7 @@ try {
     await owner.getByLabel(/^Email/).last().fill(cofounderEmail);
     await owner.getByRole("button", { name: /Preview invitation/ }).last().click();
     await owner.getByRole("button", { name: /Confirm and send/ }).click();
-    const m = await waitForMail(cofounderEmail, "invited");
+    const m = await waitForMail(cofounderEmail, "accepted into");
     const co = await newPage();
     await co.goto(linkIn(m));
     await co.getByLabel(/^Your name/).fill("Cole Cofounder");
@@ -402,6 +402,29 @@ try {
       // Same account, no new sign-up: the mentor's area now lists both cohorts.
       await mentorPage.goto(`${BASE}/mentor/availability`);
       await mentorPage.getByText(new RegExp(`E2E Spring ${run}`)).first().waitFor();
+    });
+
+    await step("emails: founder got a welcome email; admin edits the acceptance email and emails all startups personally", async () => {
+      await waitForMail(founderEmail, "Welcome to");
+      await owner.goto(`${cohortUrl}/emails`);
+      const acc = owner.locator("form").filter({ has: owner.getByRole("button", { name: "Send test to me" }) }).first();
+      await acc.getByLabel(/^Subject/).fill("You're in, {startup_name}!");
+      await acc.getByRole("button", { name: "Preview" }).click();
+      await owner.getByText(`You're in, Acme ${run}!`).first().waitFor();
+      await acc.getByRole("button", { name: "Save" }).click();
+      await owner.getByText(/New emails of this kind use your wording/).waitFor();
+      await owner.getByLabel(/^Subject/).first().fill("Demo day prep for {startup_name}");
+      await owner.getByLabel(/^Message/).first().fill("Hi {first_name},\n\nPlease bring a 3-minute deck.\n\n- Rehearsal Tuesday\n- Demo day Friday");
+      await owner.getByRole("button", { name: /Preview recipients and email/ }).click();
+      await owner.getByText(/Each gets a separate email/).waitFor();
+      await shot(owner, "20-email-startups-preview");
+      await owner.getByRole("button", { name: /^Send to \d+ (person|people)$/ }).click();
+      await owner.getByText(/^Sent: \d+ emails? queued/).waitFor();
+      const m = await waitForMail(founderEmail, `Demo day prep for Acme ${run}`);
+      if (!/Hi Fatima,/.test(m.text)) throw new Error("message not personalised: " + m.text.slice(0, 80));
+      await owner.reload();
+      await owner.getByText(`Demo day prep for {startup_name}`).first().waitFor();
+      await shot(owner, "21-emails-page");
     });
   }
 } catch {

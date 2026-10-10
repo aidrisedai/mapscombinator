@@ -7,12 +7,53 @@ export type Rendered = { subject: string; text: string; html: string };
 const esc = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 
-type Block = { p?: string; kv?: [string, string | null | undefined][]; button?: { label: string; url: string }; small?: string };
+/** Escaped HTML for a plain-text body: blank lines → paragraphs, "- " lines → lists, https links clickable. */
+function richHtml(body: string): string {
+  const linkify = (escaped: string) => escaped.replace(/https:\/\/[^\s<]+[^\s<.,;:!?)\]'"]/g, (u) => `<a href="${u}" style="color:#0f6b4c">${u}</a>`);
+  return body
+    .replace(/\r\n?/g, "\n")
+    .trim()
+    .split(/\n\s*\n/)
+    .map((chunk) => {
+      const lines = chunk.split("\n");
+      const out: string[] = [];
+      let list: string[] = [];
+      const flushList = () => {
+        if (list.length) out.push(`<ul style="margin:0 0 16px;padding-left:20px;line-height:1.5">${list.map((l) => `<li>${l}</li>`).join("")}</ul>`);
+        list = [];
+      };
+      let para: string[] = [];
+      const flushPara = () => {
+        if (para.length) out.push(`<p style="margin:0 0 16px;line-height:1.5">${para.join("<br>")}</p>`);
+        para = [];
+      };
+      for (const line of lines) {
+        const m = line.match(/^\s*[-•]\s+(.*)$/);
+        if (m) {
+          flushPara();
+          list.push(linkify(esc(m[1])));
+        } else {
+          flushList();
+          para.push(linkify(esc(line)));
+        }
+      }
+      flushPara();
+      flushList();
+      return out.join("");
+    })
+    .join("");
+}
+
+type Block = { rich?: string; p?: string; kv?: [string, string | null | undefined][]; button?: { label: string; url: string }; small?: string };
 
 function compose(subject: string, org: string, blocks: Block[], support?: string | null): Rendered {
   const text: string[] = [];
   const html: string[] = [];
   for (const b of blocks) {
+    if (b.rich) {
+      text.push(b.rich.replace(/\r\n?/g, "\n").trim());
+      html.push(richHtml(b.rich));
+    }
     if (b.p) {
       text.push(b.p);
       html.push(`<p style="margin:0 0 16px;line-height:1.5">${esc(b.p).replace(/\n/g, "<br>")}</p>`);
@@ -67,7 +108,8 @@ export type TemplateName =
   | "booking_confirmed"
   | "booking_cancelled"
   | "booking_rescheduled"
-  | "cohort_added";
+  | "cohort_added"
+  | "custom";
 
 type P = Record<string, string | null | undefined>;
 
@@ -75,6 +117,12 @@ export function render(template: TemplateName, p: P, s: P = {}): Rendered {
   const org = p.org ?? "MAPS Combinator";
   switch (template) {
     case "invitation":
+      if (p.customBody)
+        return compose(p.customSubject || `You're invited to ${p.cohort ?? org}`, org, [
+          { rich: p.customBody },
+          { button: { label: "Set up your account", url: s.link ?? "" } },
+          { small: `This invitation is for ${p.email} only and expires ${p.expires}. If you weren't expecting it, you can ignore this email.` },
+        ], p.support);
       return compose(
         `You're invited to ${p.cohort ?? org}${p.startup ? ` as a founder of ${p.startup}` : ""}`,
         org,
@@ -89,6 +137,12 @@ export function render(template: TemplateName, p: P, s: P = {}): Rendered {
         ],
         p.support,
       );
+    case "custom":
+      return compose(p.subject ?? "", org, [
+        { rich: p.body ?? "" },
+        ...(p.url ? [{ button: { label: p.buttonLabel || "Open the platform", url: p.url } }] : []),
+        ...(p.small ? [{ small: p.small }] : []),
+      ], p.support);
     case "cohort_added":
       return compose(`You've been added to ${p.cohort} as a mentor / advisor`, org, [
         { p: `Hi ${p.name ?? "there"},` },

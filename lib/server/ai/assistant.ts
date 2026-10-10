@@ -40,6 +40,7 @@ const DRAFTS = {
   startupProfile: z.object({ name: s, description: s, website: s }),
   mentorProfile: z.object({ headline: s, bio: s, expertise: s, interests: s, linkedinUrl: s, calendarUrl: s, meetingInstructions: s }),
   booking: z.object({ topic: s, helpNeeded: s }),
+  email: z.object({ subject: s, body: s }),
 } as const;
 
 export type AiKind = keyof typeof DRAFTS;
@@ -56,6 +57,7 @@ const INSTRUCTIONS: Record<AiKind, string> = {
   weekly: `Help a founding team write their weekly summary from their notes and the daily updates in context. accomplished (≤${LIMITS.weekly.accomplished}), learned (≤${LIMITS.weekly.learned}), nextCommitments (≤${LIMITS.weekly.nextCommitments}), blockers (≤${LIMITS.weekly.blockers}), link (https or empty). Use "- " bullets where it helps. Only state what the notes support.`,
   startupProfile: `Draft the startup's public profile: name ≤120 chars; description ≤500 chars, plain and specific (who it helps and how); website a full https:// URL or empty.`,
   mentorProfile: `Draft a mentor/advisor profile: headline is one line ≤160 chars (current role · notable past role); interests ≤1000 chars: the kinds of startups, sectors or problems they want to help with; linkedinUrl and calendarUrl are full https:// links only if the person gave them, else empty (never invent links); bio ≤1500 chars in the first person or third person as the user prefers; expertise is a comma-separated list of up to 12 short tags; meetingInstructions ≤1000 chars (how founders should prepare or join).`,
+  email: `Draft an email from the program team to startup founders (or mentors). subject ≤200 chars; body ≤10000 chars, plain text, warm and concise, blank lines between paragraphs and "- " for lists. Personalise with these placeholders, written exactly like this, instead of real names: {first_name}, {full_name}, {startup_name}, {cohort_name}, {start_date}, {program_name}, {inviter_name}, {support_email}. No other {placeholders}. Don't add account-setup links or sign-up instructions: the platform adds the right button itself.`,
   booking: `Help a founder prepare their question for a mentor appointment. topic: one scannable line ≤200 chars; helpNeeded ≤2000: context, what they've tried, and the decision they face.`,
 };
 
@@ -95,6 +97,7 @@ async function contextFor(actor: Account, kind: AiKind, c: Ctx): Promise<string[
     case "week":
     case "session":
     case "announcement":
+    case "email":
     case "invites": {
       const a = cohortLines(await requireCohortAdmin(actor, c.cohortId ?? ""));
       if (kind === "invites") lines.push(actor.isOwner ? "This person may invite administrators, mentors and viewers." : `This person may invite mentors and viewers only (not "admin").`);
@@ -171,6 +174,7 @@ const FAKE: Record<AiKind, Record<string, unknown>> = {
   weekly: { accomplished: "- Five interviews\n- Pricing test", learned: "Clinics pay per site, not per seat.", nextCommitments: "- Pilot with one clinic", blockers: "", link: "" },
   startupProfile: { name: "", description: "We help neighborhood clinics fill volunteer shifts in minutes.", website: "" },
   mentorProfile: { headline: "Partner, Cascade Ventures · ex-founder", bio: "Former founder; advises on fundraising and pricing.", expertise: "fundraising, pricing, B2B sales", interests: "Health and climate startups selling to cities.", linkedinUrl: "", calendarUrl: "", meetingInstructions: "Send your deck the day before." },
+  email: { subject: "Week 3 check-in for {startup_name}", body: "Hi {first_name},\n\nQuick reminder to post your weekly summary by Friday.\n\n- What moved forward\n- What you learned\n\nThanks,\n{inviter_name}" },
   booking: { topic: "Pricing our clinic pilot", helpNeeded: "Per-seat vs per-shift pricing; we tried per-seat and clinics balked." },
 };
 
