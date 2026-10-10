@@ -374,6 +374,35 @@ try {
       if (!/Previous time/.test(m.text)) throw new Error("reschedule email lacks previous time");
       await shot(founder, "16-rescheduled");
     });
+
+    await step("advisors: mentor sees team progress; second cohort adds them without a new sign-up and invites a new advisor", async () => {
+      await mentorPage.goto(`${BASE}/app/cohorts/${cohortId}/startups`);
+      await mentorPage.getByText(/daily updates? this week/).first().waitFor();
+      await mentorPage.getByText(/Weekly summary posted/).first().waitFor();
+      await shot(mentorPage, "17-advisor-team-progress");
+      await owner.goto(`${BASE}/manage/cohorts/new`);
+      await owner.getByLabel(/^Cohort name/).fill(`E2E Spring ${run}`);
+      await owner.getByLabel(/^Week 1 start date/).fill(daysAgo(1));
+      await owner.getByRole("button", { name: /Save as draft/ }).click();
+      await owner.waitForURL(/\/manage\/cohorts\/[0-9a-f-]{36}(\?|$)/);
+      const spring = owner.url().split("?")[0];
+      await owner.goto(`${spring}/advisors`);
+      await owner.getByText("Maya Mentor").first().waitFor();
+      await owner.getByLabel(/^Advisors to add/).fill(`New Advisor, advisor-${run}@example.org\nMaya, ${mentorEmail}`);
+      await owner.getByRole("button", { name: /^Preview$/ }).click();
+      await owner.getByText(/New: invitation to set up an account/).waitFor();
+      await owner.getByText(/Has an account: added directly/).waitFor();
+      await shot(owner, "18-advisors-preview");
+      await owner.getByRole("button", { name: /Confirm: add 2 advisors/ }).click();
+      await owner.getByText(/1 invitation queued and 1 existing account added/).waitFor();
+      await waitForMail(mentorEmail, "added to");
+      await waitForMail(`advisor-${run}@example.org`, "invited");
+      await owner.getByText(/In this cohort \(1\)/).waitFor();
+      await shot(owner, "19-advisors-added");
+      // Same account, no new sign-up: the mentor's area now lists both cohorts.
+      await mentorPage.goto(`${BASE}/mentor/availability`);
+      await mentorPage.getByText(new RegExp(`E2E Spring ${run}`)).first().waitFor();
+    });
   }
 } catch {
   // reported below

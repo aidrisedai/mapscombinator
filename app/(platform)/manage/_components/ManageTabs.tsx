@@ -8,6 +8,7 @@ export function ManageTabs({ base }: { base: string }) {
   const items = [
     { key: "overview", href: base, label: "Overview" },
     { key: "startups", href: `${base}/startups`, label: "Startups" },
+    { key: "advisors", href: `${base}/advisors`, label: "Advisors" },
     { key: "members", href: `${base}/members`, label: "Members" },
     { key: "weeks", href: `${base}/weeks`, label: "Weekly guide" },
     { key: "office-hours", href: `${base}/office-hours`, label: "Office hours" },

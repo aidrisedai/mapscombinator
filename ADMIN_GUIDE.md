@@ -33,6 +33,14 @@ Cohort → **Office hours** → **Add session**. For a weekly series, tick *Repe
 
 To change one date, edit it with *This occurrence*. To change all remaining dates, choose *This and future occurrences*; past sessions are never changed. **Cancel** keeps the session visible as cancelled, and offers a cancellation email (pre-checked if that session was emailed before).
 
+## Advisors tab (onboarding advisors)
+Cohort → **Advisors**:
+- **Invite advisors:** paste one per line (`Name, email`; spreadsheet rows work), press **Preview**, check the list, then **Confirm**. New people get an invitation to set up their account. People who already have an account, for example from an earlier cohort, are added straight away and get a short "you've been added" email. They never sign up twice. Running the same list again doesn't duplicate anything.
+- **Add advisors from other cohorts:** tick advisors who already work with your other cohorts and press **Add selected**.
+- **The list** shows each advisor's profile status, whether they've published availability, and their upcoming appointments, with links to edit their profile or availability on their behalf, or remove them from this cohort.
+
+What advisors see: the cohort's startups with this week's progress (daily updates, whether the weekly summary is posted, total updates; published only, never drafts), each team's published timeline, the journal, the weekly guide, office hours and announcements. Founders don't see the cross-team progress counts.
+
 ## Mentors
 Cohort → **Members** → invite with role *Mentor / advisor*. The invitation email tells them they'll set up a profile. After they accept, they land on **Mentor → Profile** with a welcome note and fill in:
 - headline, short bio, areas of expertise and interests (the startups or problems they want to help with);

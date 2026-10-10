@@ -66,7 +66,8 @@ export type TemplateName =
   | "session_cancelled"
   | "booking_confirmed"
   | "booking_cancelled"
-  | "booking_rescheduled";
+  | "booking_rescheduled"
+  | "cohort_added";
 
 type P = Record<string, string | null | undefined>;
 
@@ -88,6 +89,13 @@ export function render(template: TemplateName, p: P, s: P = {}): Rendered {
         ],
         p.support,
       );
+    case "cohort_added":
+      return compose(`You've been added to ${p.cohort} as a mentor / advisor`, org, [
+        { p: `Hi ${p.name ?? "there"},` },
+        { p: `${p.inviter} added you to ${p.cohort} at ${org} as a mentor / advisor. You don't need a new account: sign in with the one you already have.` },
+        { p: "You can now see the startups in this cohort, their published updates and the weekly guide. Founders can book you once you add availability for this cohort." },
+        { button: { label: `Open ${p.cohort}`, url: p.url ?? "" } },
+      ], p.support);
     case "password_reset":
       return compose(`Reset your ${org} password`, org, [
         { p: "Someone (hopefully you) asked to reset the password for this account." },

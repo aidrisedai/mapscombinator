@@ -12,7 +12,7 @@ Date: 2026-10-02. Environment: cloud dev container, Node 22.22, Postgres 16.10 (
 |---|---|
 | `npm run lint` | ✅ 0 problems |
 | `npm run typecheck` | ✅ 0 errors |
-| `npm test` (Vitest + real Postgres) | ✅ 8 files, 33 tests passed (latest run) |
+| `npm test` (Vitest + real Postgres) | ✅ 9 files, 37 tests passed (latest run) |
 | `npm run build` | ✅ succeeded (all platform routes dynamic; marketing pages static) |
 | `npm run e2e` against `npm run dev` | ✅ 18/18 steps |
 | `npm run e2e` against the **production build** (`npm run start`) | ✅ 18/18 steps |
@@ -82,6 +82,19 @@ Fixed in this pass:
 - `npm test`: 8 files, 33 tests passed. Lint and typecheck: clean. Production build: succeeded.
 - `npm run e2e` against the production build: 18/18 steps. Step 16 now checks that a mentor lands on their profile with a welcome note after accepting, and saves the new fields. Step 17 checks that the founder sees the headline on the Mentors tab, and the LinkedIn, calendar and contact details on the mentor page.
 - `scripts/crawl.mjs` (signed out, owner, founder and mentor; 1280 px and 390 px): 286 page loads, 0 problems.
+
+## Advisor onboarding pass (2026-10-10)
+
+- New **Manage → Advisors** tab (bulk invite with preview, direct add of existing accounts, add from other cohorts) and published-only team progress on the Startups page for advisors, viewers and admins.
+- `tests/advisors.test.ts` (4 tests) covers:
+  - parsing pasted lists, including duplicates and lines without an email;
+  - new people are invited, existing accounts are added directly with a notice email and no invitation, and re-running duplicates nothing;
+  - accounts from other organizations, admins of other cohorts and founders are refused;
+  - progress counts include published updates only, and founders get no cross-team view.
+- `npm test`: 9 files, 37 tests passed. Lint and typecheck: clean.
+- `npm run e2e`: 19/19 steps. The new step checks that a mentor sees team progress, and that a second cohort adds that mentor without a new sign-up while inviting a new advisor (both emails checked).
+- `scripts/crawl.mjs`: 288 page loads across roles at 1280 px and 390 px, 0 problems.
+- Note: this pass ran against `next dev`. The production build couldn't run in this container because Google Fonts was blocked by the network (HTTP 403). The deploy build on Railway has normal internet access.
 
 ## Acceptance matrix
 
