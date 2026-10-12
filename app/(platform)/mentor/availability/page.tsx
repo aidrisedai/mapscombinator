@@ -8,6 +8,7 @@ import { mentorPage, NotAMentor, OnBehalfBanner } from "../context";
 import { ExceptionForm } from "./ExceptionForm";
 import { RetireRule } from "./RetireRule";
 import { RuleForm } from "./RuleForm";
+import { CalendarLinkForm } from "./CalendarLinkForm";
 
 export const metadata: Metadata = { title: "Availability" };
 
@@ -23,12 +24,27 @@ export default async function AvailabilityPage({ searchParams }: { searchParams:
   const openCohorts = ctx.cohorts.filter((c) => c.status === "active" || c.status === "draft").map((c) => ({ id: c.id as string, name: c.name as string }));
   return (
     <>
-      <PageHeader title="Availability" description="Open times founders can book. Each time is one reservation shared across your cohorts." />
+      <PageHeader title="Availability" description="How founders book time with you: through your own booking link, through times you publish here, or both." />
       <OnBehalfBanner ctx={ctx} />
-      <div className="mb-8">
-        <Notice tone="info" title="This platform manages its own availability">
-          Block any time you can&apos;t attend; your external calendar is not checked. Changing availability never cancels or moves an existing appointment.
-        </Notice>
+      <div className="mb-10 grid gap-6 lg:grid-cols-2">
+        <Card>
+          <SectionTitle>Option 1: Use your own booking link</SectionTitle>
+          <p className="mb-4 text-sm text-ink/70">
+            Already use Calendly or another scheduler? Add the link and founders get a <strong>Book on their calendar</strong> button on your profile. Your calendar handles availability, reminders and video links.
+          </p>
+          <CalendarLinkForm mentorId={ctx.mentor.id} calendarUrl={(ctx.profile?.calendar_url as string | null) ?? ""} />
+        </Card>
+        <Card>
+          <SectionTitle>Option 2: Publish times on the platform</SectionTitle>
+          <p className="text-sm text-ink/70">
+            Add a weekly window or single dates below. Founders book a time and add their question, and both of you get confirmation emails. Each time is one reservation shared across your cohorts.
+          </p>
+          <div className="mt-4">
+            <Notice tone="info" title="Platform times don't read your external calendar">
+              Block any time you can&apos;t attend. Changing availability never cancels or moves an existing appointment.
+            </Notice>
+          </div>
+        </Card>
       </div>
 
       <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">

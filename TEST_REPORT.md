@@ -12,7 +12,7 @@ Date: 2026-10-02. Environment: cloud dev container, Node 22.22, Postgres 16.10 (
 |---|---|
 | `npm run lint` | ✅ 0 problems |
 | `npm run typecheck` | ✅ 0 errors |
-| `npm test` (Vitest + real Postgres) | ✅ 12 files, 54 tests passed (latest run) |
+| `npm test` (Vitest + real Postgres) | ✅ 12 files, 56 tests passed (latest run) |
 | `npm run build` | ✅ succeeded (all platform routes dynamic; marketing pages static) |
 | `npm run e2e` against `npm run dev` | ✅ 18/18 steps |
 | `npm run e2e` against the **production build** (`npm run start`) | ✅ 18/18 steps |
@@ -155,6 +155,19 @@ Fixed in this pass:
 
 - One-person form (name, email, optional expertise and LinkedIn), with a preview of what will happen before anything is sent. The paste-a-list option is kept under "Add several at once". Migration `009` stores the profile pre-fill on the invitation, and it's copied on accept into empty fields only.
 - Tests: validation, invite then pending on repeat, pre-fill copied on accept, an existing account added directly without overwriting their own expertise, founders refused. `npm test`: 12 files, 54 tests passed. `npm run e2e`: 20/20 steps; the advisor step now uses the form for both a new and an existing person.
+
+## Advisor dashboard and booking link (2026-10-12)
+
+- **Mentor → Startups** (now the advisor home page) shows each startup's published daily update for a chosen day, its weekly summary, and the week's published guide and materials. **Availability → Option 1** saves an external booking link; founders see a "Book on their calendar" button, and booking through the platform is skipped when a mentor has no platform times.
+- Tests:
+  - the dashboard shows published dailies and weeklies but not drafts;
+  - an unpublished guide stays hidden, and a published guide shows its resources;
+  - bad week or date values fall back safely;
+  - founders and other cohorts are refused;
+  - the booking link is validated (a `javascript:` link is refused, `calendly.com/x` is normalised), can be set by an admin on the advisor's behalf, and founders can't change it.
+- `npm test`: 12 files, 56 tests passed.
+- `npm run e2e`: 20/20. The advisor step now opens the dashboard (sees the founder's update, the Week 2 guide and the slides) and saves a booking link, and the founder sees it.
+- Crawl as mentor and founder, 1280 px and 390 px: 164 page loads, 0 problems.
 
 ## Acceptance matrix
 

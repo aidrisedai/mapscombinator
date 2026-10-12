@@ -212,6 +212,16 @@ export async function getUpdateForPeriod(actor: Account, cohortId: string, enrol
   return rows[0] ? mapUpdate(rows[0]) : null;
 }
 
+/** Published, unhidden updates for one day or week of a cohort. Callers authorize. */
+export async function publishedUpdatesFor(cohortId: string, f: { kind: UpdateKind; reportDate?: string; week?: number }) {
+  const db = sql();
+  const rows =
+    f.kind === "daily"
+      ? await db`${SELECT(db)} where u.cohort_id = ${cohortId} and u.state = 'published' and u.hidden_at is null and u.kind = 'daily' and u.report_date = ${f.reportDate ?? null}`
+      : await db`${SELECT(db)} where u.cohort_id = ${cohortId} and u.state = 'published' and u.hidden_at is null and u.kind = 'weekly' and u.week_number = ${f.week ?? null}`;
+  return rows.map(mapUpdate);
+}
+
 export type JournalFilter = { kind?: UpdateKind | "all"; enrollmentId?: string; week?: number; page?: number };
 export const PAGE_SIZE = 20;
 

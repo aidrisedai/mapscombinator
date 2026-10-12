@@ -1,7 +1,7 @@
 "use server";
 
 import { act, obj, str } from "@/lib/server/action";
-import { addException, createRule, previewRule, retireRule, updateMentorProfile, type RuleInput } from "@/lib/server/domain/mentors";
+import { addException, createRule, previewRule, retireRule, updateMentorCalendar, updateMentorProfile, type RuleInput } from "@/lib/server/domain/mentors";
 
 function ruleInput(fd: FormData): RuleInput {
   const o: Record<string, unknown> = obj(fd);
@@ -10,6 +10,13 @@ function ruleInput(fd: FormData): RuleInput {
   if (!o.weekday) delete o.weekday;
   if (o.kind !== "weekly") o.endDate = "";
   return o as RuleInput;
+}
+
+export async function updateMentorCalendarAction(fd: FormData) {
+  return act(async (actor) => {
+    const url = await updateMentorCalendar(actor, str(fd, "mentorId"), obj(fd));
+    return { message: url ? "Saved. Founders now see a “Book on their calendar” button on your profile." : "Booking link removed." };
+  });
 }
 
 export async function updateMentorProfileAction(fd: FormData) {

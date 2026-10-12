@@ -397,7 +397,25 @@ try {
       await shot(founder, "16-rescheduled");
     });
 
-    await step("advisors: mentor sees team progress; second cohort adds them without a new sign-up and invites a new advisor", async () => {
+    await step("advisors: dashboard with updates and materials, own booking link, team progress; second cohort adds them without a new sign-up and invites a new advisor", async () => {
+      // Advisor dashboard: today's updates, weekly summaries and this week's materials.
+      await mentorPage.goto(`${BASE}/mentor`);
+      await mentorPage.waitForURL(/\/mentor\/startups/);
+      await mentorPage.getByText(/^Daily updates ·/).waitFor();
+      await mentorPage.getByText(`Acme ${run}`).first().waitFor();
+      await mentorPage.getByText("This week's materials").waitFor();
+      await mentorPage.getByText("Customer discovery").first().waitFor();
+      await mentorPage.getByRole("link", { name: /Discovery slides|discovery\.pdf/ }).first().waitFor();
+      await mentorPage.getByText(/Weekly summaries · Week 2/).waitFor();
+      await shot(mentorPage, "16c-advisor-dashboard");
+      // Own booking link instead of (or as well as) platform times.
+      await mentorPage.goto(`${BASE}/mentor/availability`);
+      await mentorPage.getByLabel(/^Booking link/).fill("cal.com/maya-mentor");
+      await mentorPage.getByRole("button", { name: "Save booking link" }).click();
+      await mentorPage.getByText(/Founders now see a “Book on their calendar” button/).waitFor();
+      await founder.goto(`${BASE}/app/cohorts/${cohortId}/mentors`);
+      const cal = founder.getByRole("link", { name: /Book on their calendar/ }).first();
+      if ((await cal.getAttribute("href")) !== "https://cal.com/maya-mentor") throw new Error("booking link not shown to founder");
       await mentorPage.goto(`${BASE}/app/cohorts/${cohortId}/startups`);
       await mentorPage.getByText(/daily updates? this week/).first().waitFor();
       await mentorPage.getByText(/Weekly summary posted/).first().waitFor();

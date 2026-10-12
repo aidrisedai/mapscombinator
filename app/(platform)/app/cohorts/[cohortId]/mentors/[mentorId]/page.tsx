@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Card, EmptyState, Notice, PageHeader, Prose, SectionTitle } from "@/components/ui/primitives";
+import { Card, EmptyState, Notice, PageHeader, Prose, SectionTitle, buttonClass } from "@/components/ui/primitives";
 import { cancellationPolicyText, getCohortMentor } from "@/lib/server/domain/bookings";
 import { load } from "@/lib/server/page";
 import { requirePageAccount } from "@/lib/server/session";
@@ -69,6 +69,21 @@ export default async function MentorPage({ params }: { params: Promise<{ cohortI
             </div>
           ) : isFounder ? (
             <>
+              {mentor.calendar_url && (
+                <div className="mb-5 rounded-lg border border-forest/30 bg-forest/5 p-4">
+                  <p className="font-semibold text-ink">Book on {mentor.display_name}&apos;s calendar</p>
+                  <p className="mt-1 text-sm text-ink/70">
+                    {views.length ? "Prefer their own scheduler? It" : "This mentor takes bookings through their own scheduling page. It"} opens in a new tab. Mention your startup and what you&apos;d like help with.
+                  </p>
+                  <a href={mentor.calendar_url} target="_blank" rel="noopener noreferrer nofollow" className={`${buttonClass("primary")} mt-3`}>
+                    Open booking page ↗
+                  </a>
+                </div>
+              )}
+              {views.length === 0 && mentor.calendar_url ? (
+                <p className="text-sm text-ink/60">No times are published on the platform; use the booking page above.</p>
+              ) : (
+              <>
               <AiAssistant kind="booking" ctx={{ cohortId, enrollmentId: access.founderOf[0]?.enrollmentId, mentorId: mentor.id }} target="#ai-target-booking" configured={aiConfigured()} audience="founder" title="Prepare your question with AI" intro="Pick a time first, then tell me what you want help with. I draft the topic and question for you to check." placeholder="e.g. We can't decide between charging clinics per seat or per volunteer shift" />
               <div id="ai-target-booking">
                 <BookingFlow
@@ -81,6 +96,8 @@ export default async function MentorPage({ params }: { params: Promise<{ cohortI
                 meetingInstructions={mentor.meeting_instructions ?? ""}
               />
               </div>
+              </>
+              )}
             </>
           ) : (
             <div className="space-y-4">

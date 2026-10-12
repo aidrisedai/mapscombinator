@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 import { sql } from "@/lib/server/db";
 import { createStartup } from "@/lib/server/domain/startups";
 import { saveUpdate } from "@/lib/server/domain/updates";
-import { addAdvisors, addExistingAdvisors, addOneAdvisor, listOtherAdvisors, parseAdvisorList, previewAdvisors, previewOneAdvisor, teamProgress } from "@/lib/server/domain/advisors";
+import { publishWeek, saveWeekDraft, addLinkResource } from "@/lib/server/domain/weeks";
+import { updateMentorCalendar } from "@/lib/server/domain/mentors";
+import { getCohortMentor } from "@/lib/server/domain/bookings";
+import { addAdvisors, addExistingAdvisors, addOneAdvisor, advisorDigest, listOtherAdvisors, parseAdvisorList, previewAdvisors, previewOneAdvisor, teamProgress } from "@/lib/server/domain/advisors";
 import { consumeInvitation, hashToken, newToken } from "@/lib/server/domain/invitations";
 import { tx } from "@/lib/server/db";
 import { todayIn } from "@/lib/time";
@@ -110,5 +113,45 @@ describe("advisor onboarding", () => {
     expect(p).toMatchObject({ expertise: ["Hiring"], linkedin_url: "https://www.linkedin.com/in/vet" });
     expect((await addOneAdvisor(w.admin2, w.C2.id, { name: "Vet", email: w.vet.email })).action).toBe("already");
     await expect(addOneAdvisor(w.fa, w.C2.id, { name: "X", email: "x@example.org" })).rejects.toThrow();
+  });
+
+  it("advisor dashboard: each startup's published daily and weekly updates, plus the week's guide and materials", async () => {
+    const w = await world();
+    await addExistingAdvisors(w.admin2, w.C2.id, [w.vet.id]);
+    const eb = await createStartup(w.owner, w.C2.id, { name: "Bravo", description: "b", contactName: "B", contactEmail: `b-${w.C2.id.slice(0, 6)}@example.org` });
+    const today = todayIn("America/Los_Angeles");
+    const before = await advisorDigest(w.vet, w.C2.id, {});
+    expect(before.guide.content).toBeNull(); // unpublished guide stays hidden
+    const week = before.week;
+    await saveUpdate(w.fa, w.C2.id, { enrollmentId: w.ea, kind: "daily", reportDate: today, content: { moved: "Signed pilot", next: "Onboard" }, lockVersion: null, intent: "publish" });
+    await saveUpdate(w.fa, w.C2.id, { enrollmentId: w.ea, kind: "weekly", weekNumber: week, content: { accomplished: "Draft only", learned: "x", nextCommitments: "y" }, lockVersion: null, intent: "draft" });
+    await saveWeekDraft(w.owner, w.C2.id, week, { title: "Pricing", objective: "Test a price", instructions: "", deliverable: "One pricing page" });
+    await addLinkResource(w.owner, w.C2.id, week, { label: "Pricing slides", url: "https://example.org/slides" });
+    await publishWeek(w.owner, w.C2.id, week, { sendEmail: false });
+    const d = await advisorDigest(w.vet, w.C2.id, { date: today });
+    const alpha = d.teams.find((t) => t.id === w.ea)!;
+    expect(alpha.daily?.content.moved).toBe("Signed pilot");
+    expect(alpha.weekly).toBeNull(); // drafts never show
+    expect(alpha.dailiesThisWeek).toBe(1);
+    expect(d.teams.find((t) => t.id === eb)).toMatchObject({ daily: null, weekly: null, dailiesThisWeek: 0 });
+    expect(d.guide.content).toMatchObject({ title: "Pricing", deliverable: "One pricing page" });
+    expect(d.guide.resources.map((r) => r.label)).toEqual(["Pricing slides"]);
+    expect(d.days).toHaveLength(7);
+    // Out-of-range input falls back safely; founders don't get this view.
+    expect((await advisorDigest(w.vet, w.C2.id, { week: 99, date: "not-a-date" })).week).toBe(d.currentWeek);
+    await expect(advisorDigest(w.fa, w.C2.id, {})).rejects.toThrow(/advisors/);
+    await expect(advisorDigest(w.vet, w.C1.id === w.C2.id ? "" : (await activeCohort(w.owner)).id, {})).rejects.toThrow();
+  });
+
+  it("advisors can use their own booking link, shown to founders in their cohort", async () => {
+    const w = await world();
+    await addExistingAdvisors(w.admin2, w.C2.id, [w.vet.id]);
+    const bad = await updateMentorCalendar(w.vet, w.vet.id, { calendarUrl: "javascript:alert(1)" }).catch((e) => e);
+    expect(bad.fieldErrors?.calendarUrl).toBeTruthy();
+    expect(await updateMentorCalendar(w.vet, w.vet.id, { calendarUrl: "calendly.com/vet/30min" })).toBe("https://calendly.com/vet/30min");
+    expect((await getCohortMentor(w.fa, w.C2.id, w.vet.id)).mentor.calendar_url).toBe("https://calendly.com/vet/30min");
+    await updateMentorCalendar(w.admin2, w.vet.id, { calendarUrl: "" }); // admin on behalf
+    expect((await getCohortMentor(w.fa, w.C2.id, w.vet.id)).mentor.calendar_url).toBeNull();
+    await expect(updateMentorCalendar(w.fa, w.vet.id, { calendarUrl: "https://cal.com/x" })).rejects.toThrow();
   });
 });

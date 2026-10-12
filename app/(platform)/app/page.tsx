@@ -17,7 +17,7 @@ export default async function AppHome({ searchParams }: { searchParams: Promise<
   const founderCohorts = cohorts.filter((c) => c.relation.includes("founder"));
   // One obvious place to go: straight there.
   if (!password && cohorts.length === 1 && founderCohorts.length === 1) redirect(`/app/cohorts/${cohorts[0].id}`);
-  if (!password && !account.isOwner && cohorts.length > 0 && cohorts.every((c) => c.relation.length === 1 && c.relation[0] === "mentor")) redirect("/mentor/appointments");
+  if (!password && !account.isOwner && cohorts.length > 0 && cohorts.every((c) => c.relation.length === 1 && c.relation[0] === "mentor")) redirect("/mentor/startups");
   return (
     <>
       <PageHeader title={`Welcome, ${account.displayName.split(" ")[0]}`} description="Choose a cohort to open its journal, weekly guide and office hours." />

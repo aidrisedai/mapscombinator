@@ -462,3 +462,15 @@ export async function refreshAllSlots() {
 }
 
 export { localDateOf };
+
+/** Set or clear the mentor's own booking link (Calendly, Cal.com, Google Calendar booking page…). */
+export async function updateMentorCalendar(actor: Account, mentorId: string, input: Record<string, string>) {
+  const v = parse(z.object({ calendarUrl: friendlyHttps("booking page") }), input);
+  await tx(async (t) => {
+    const m = await requireMentorManager(actor, mentorId, t);
+    await t`insert into mentor_profiles (account_id, calendar_url, updated_by) values (${mentorId}, ${v.calendarUrl}, ${actor.id})
+            on conflict (account_id) do update set calendar_url = excluded.calendar_url, updated_by = excluded.updated_by, updated_at = now()`;
+    await audit(t, { actorId: actor.id, action: "mentor.calendar_update", objectType: "account", objectId: mentorId, summary: { onBehalf: !m.self, set: Boolean(v.calendarUrl) } });
+  });
+  return v.calendarUrl;
+}

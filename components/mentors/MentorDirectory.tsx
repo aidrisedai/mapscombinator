@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { When } from "@/components/office-hours/When";
-import { Card, EmptyState, LinkButton, Notice, SectionTitle } from "@/components/ui/primitives";
+import { Card, EmptyState, LinkButton, Notice, SectionTitle, buttonClass } from "@/components/ui/primitives";
 import { listCohortMentors } from "@/lib/server/domain/bookings";
 import { load } from "@/lib/server/page";
 import type { Account } from "@/lib/server/session";
@@ -37,7 +37,7 @@ export async function MentorDirectory({ account, cohortId }: { account: Account;
       ) : (
         <ul className="grid gap-4 md:grid-cols-2">
           {mentors.map((raw) => {
-            const m = raw as typeof raw & { id: string; display_name: string; headline: string | null; bio: string | null; expertise: string[] | null; interests: string | null };
+            const m = raw as typeof raw & { id: string; display_name: string; headline: string | null; bio: string | null; expertise: string[] | null; interests: string | null; calendar_url: string | null };
             const href = `/app/cohorts/${cohortId}/mentors/${m.id}`;
             const tags = (m.expertise as string[] | null) ?? [];
             const bio = (m.bio as string | null) ?? "";
@@ -65,7 +65,7 @@ export async function MentorDirectory({ account, cohortId }: { account: Account;
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-ink/60">Next available</p>
                   {m.nextSlots.length === 0 ? (
-                    <p className="mt-1 text-sm text-ink/60">No open times right now. Check back later.</p>
+                    <p className="mt-1 text-sm text-ink/60">{m.calendar_url ? "Books through their own calendar." : "No open times right now. Check back later."}</p>
                   ) : (
                     <ul className="mt-1 space-y-1 text-sm">
                       {m.nextSlots.map((s) => (
@@ -76,10 +76,15 @@ export async function MentorDirectory({ account, cohortId }: { account: Account;
                     </ul>
                   )}
                 </div>
-                <div className="mt-auto">
+                <div className="mt-auto flex flex-wrap gap-2">
                   <LinkButton href={href} variant={canBook && m.nextSlots.length ? "primary" : "secondary"} size="sm">
                     {canBook && m.nextSlots.length ? "See times and book" : "View profile"}
                   </LinkButton>
+                  {canBook && m.calendar_url && (
+                    <a href={m.calendar_url as string} target="_blank" rel="noopener noreferrer nofollow" className={buttonClass(m.nextSlots.length ? "secondary" : "primary", "sm")}>
+                      Book on their calendar ↗
+                    </a>
+                  )}
                 </div>
               </Card>
             );

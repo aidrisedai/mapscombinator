@@ -82,7 +82,15 @@ Cohort → **Advisors**:
 - **Add advisors from other cohorts:** tick advisors who already work with your other cohorts and press **Add selected**.
 - **The list** shows each advisor's profile status, whether they've published availability, and their upcoming appointments, with links to edit their profile or availability on their behalf, or remove them from this cohort.
 
-What advisors see: the cohort's startups with this week's progress (daily updates, whether the weekly summary is posted, total updates; published only, never drafts), each team's published timeline, the journal, the weekly guide, office hours and announcements. Founders don't see the cross-team progress counts.
+What advisors see:
+- **Mentor → Startups** is the advisor home page. For the chosen week, it shows:
+  - every startup's published **daily update** for each day (pick the day; today by default);
+  - every startup's **weekly summary**;
+  - **This week's materials**: the guide's title, objective and deliverable, plus the slides, files and links to review.
+
+  Teams that haven't posted are listed as "No update for this day". Advisors in several cohorts switch between them at the top, and can step back or forward a week.
+- **Booking:** advisors can add their own **booking link** (Calendly, Cal.com, Google or Outlook booking page) under Availability → Option 1. Founders then see **Book on their calendar** on the Mentors tab and on the advisor's page. Publishing times on the platform (Option 2) is optional, and both can be used together.
+- Advisors also see the Startups page with this week's progress counts, each team's published timeline, the journal, the weekly guide, office hours and announcements. Drafts are never shown, and founders don't see the cross-team counts.
 
 ## Mentors
 Cohort → **Members** → invite with role *Mentor / advisor*. The invitation email tells them they'll set up a profile. After they accept, they land on **Mentor → Profile** with a welcome note and fill in:

@@ -1,6 +1,6 @@
 import "server-only";
 import { z } from "zod";
-import { programWeeks, todayIn, weekNumberFor } from "@/lib/time";
+import { addDays, isIsoDate, programWeeks, todayIn, weekNumberFor } from "@/lib/time";
 import { audit } from "../audit";
 import { assertAdminWritable, requireCohortAdmin, requireCohortRead } from "../authz";
 import { sql, tx, type Db } from "../db";
@@ -13,6 +13,9 @@ import { expertiseSchema, linkedinSchema } from "./mentors";
 import { parse } from "./validate";
 import { email as emailSchema, requiredText } from "@/lib/validation";
 import { getOrganization } from "./organization";
+import { publishedUpdatesFor } from "./updates";
+import { getWeekForReader } from "./weeks";
+import { forbidden } from "../errors";
 
 const MAX_ROWS = 100;
 const emailOk = (s: string) => z.email().safeParse(s).success && s.length <= 254;
@@ -227,4 +230,53 @@ export async function addOneAdvisor(actor: Account, cohortId: string, input: Rec
   const id = await createInvitation(actor, { role: "mentor", email: v.email, name: v.name, cohortId });
   await sql()`update invitations set profile_prefill = ${sql().json(prefill as never)} where id = ${id}`;
   return { action: "invited" as const, name: v.name };
+}
+
+// ───────────────────────────── Advisor dashboard ───────────────────────────
+
+/**
+ * One cohort at a glance for advisors (and admins/viewers): every startup's
+ * published daily update for a day, its weekly summary for the week, and the
+ * week's guide and materials. Published content only, never drafts.
+ */
+export async function advisorDigest(actor: Account, cohortId: string, q: { week?: number; date?: string }) {
+  const a = await requireCohortRead(actor, cohortId);
+  if (!(a.isMentor || a.isAdmin || a.isViewer)) throw forbidden("This overview is for advisors and the program team.");
+  const tz = a.cohort.timezone;
+  const weeks = programWeeks(a.cohort.startDate, a.cohort.weekCount);
+  const today = todayIn(tz);
+  const current = weekNumberFor(a.cohort.startDate, a.cohort.weekCount, today) ?? (today < a.cohort.startDate ? 1 : a.cohort.weekCount);
+  const week = q.week && q.week >= 1 && q.week <= weeks.length ? q.week : current;
+  const range = weeks[week - 1];
+  const days = Array.from({ length: 7 }, (_, i) => addDays(range.startDate, i));
+  const date = q.date && isIsoDate(q.date) && days.includes(q.date) ? q.date : days.includes(today) ? today : range.startDate;
+  const [startups, dailies, weeklies, counts, guide] = await Promise.all([
+    sql()`select e.id, s.name from enrollments e join startups s on s.id = e.startup_id where e.cohort_id = ${cohortId} and e.status = 'active' order by s.name`,
+    publishedUpdatesFor(cohortId, { kind: "daily", reportDate: date }),
+    publishedUpdatesFor(cohortId, { kind: "weekly", week }),
+    sql()`select enrollment_id, count(*)::int as n from team_updates where cohort_id = ${cohortId} and kind = 'daily' and week_number = ${week}
+          and state = 'published' and hidden_at is null group by enrollment_id`,
+    getWeekForReader(actor, cohortId, week),
+  ]);
+  const dailyBy = new Map(dailies.map((u) => [u.enrollmentId, u]));
+  const weeklyBy = new Map(weeklies.map((u) => [u.enrollmentId, u]));
+  const countBy = new Map(counts.map((c) => [c.enrollment_id as string, c.n as number]));
+  return {
+    access: a,
+    week,
+    currentWeek: current,
+    weekCount: weeks.length,
+    range,
+    days,
+    date,
+    today,
+    guide: { content: guide.content, resources: guide.resources },
+    teams: startups.map((s) => ({
+      id: s.id as string,
+      name: s.name as string,
+      daily: dailyBy.get(s.id as string) ?? null,
+      weekly: weeklyBy.get(s.id as string) ?? null,
+      dailiesThisWeek: countBy.get(s.id as string) ?? 0,
+    })),
+  };
 }
