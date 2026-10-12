@@ -1,16 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { CONTRIBUTION_OPTIONS } from "@/lib/forms";
 import { submitForm } from "@/lib/submit";
 import { Field, Honeypot, inputClass } from "./forms/fields";
-
-const CONTRIBUTION_OPTIONS = [
-  "Mentor or hold office hours",
-  "Be a customer or pilot partner",
-  "Volunteer with program operations",
-  "Sponsor or partner",
-  "Just send me program updates",
-];
 
 type FormState = {
   name: string;
@@ -41,9 +34,24 @@ export function GetInvolvedForm() {
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
   const [honeypot, setHoneypot] = useState("");
   const [status, setStatus] = useState<
-    "idle" | "submitting" | "success-endpoint" | "success-mailto" | "error"
+    "idle" | "submitting" | "success" | "error"
   >("idle");
   const [errorMessage, setErrorMessage] = useState("");
+
+  // The cards above link to #contribute-<path>: preselect that contribution and scroll to the form.
+  useEffect(() => {
+    const apply = () => {
+      const m = window.location.hash.match(/^#contribute-(.+)$/);
+      const option = m && CONTRIBUTION_OPTIONS.find((o) => o.anchor === m[1]);
+      if (!option) return;
+      setForm((f) => ({ ...f, contribution: option.value }));
+      setStatus((st) => (st === "success" ? "idle" : st));
+      document.getElementById("contribute")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
+    apply();
+    window.addEventListener("hashchange", apply);
+    return () => window.removeEventListener("hashchange", apply);
+  }, []);
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
@@ -64,10 +72,10 @@ export function GetInvolvedForm() {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (honeypot) return; // silently drop bot submissions
     if (!validate()) return;
     setStatus("submitting");
-    const result = await submitForm("MAPS Combinator contribution interest", {
+    const result = await submitForm("contribution", {
+      website: honeypot,
       name: form.name,
       email: form.email,
       city: form.city,
@@ -75,38 +83,28 @@ export function GetInvolvedForm() {
       expertise: form.expertise,
       organization: form.organization,
       details: form.details,
-      consentToUpdates: form.consent,
+      consent: form.consent,
     });
     if (result.ok) {
-      setStatus(result.mode === "endpoint" ? "success-endpoint" : "success-mailto");
+      setStatus("success");
+      setForm(INITIAL);
     } else {
       setErrorMessage(result.error);
+      if (result.fieldErrors) setErrors(result.fieldErrors as typeof errors);
       setStatus("error");
     }
   }
 
-  if (status === "success-endpoint" || status === "success-mailto") {
+  if (status === "success") {
     return (
       <div className="rounded-lg border border-success/40 bg-cream p-8" role="status">
-        <p className="font-display text-xl font-bold text-forest">
-          {status === "success-endpoint"
-            ? "Thank you — we have your details."
-            : "One more step: send the email draft."}
-        </p>
+        <p className="font-display text-xl font-bold text-forest">Thank you — we have your details.</p>
         <p className="mt-3 leading-relaxed text-ink/85">
-          {status === "success-endpoint"
-            ? "We will follow up about the contribution you offered as the matching program pieces are confirmed."
-            : "We opened a pre-filled email in your mail app with your answers. Press send and we will follow up about the contribution you offered as the matching program pieces are confirmed."}
+          The program team will follow up by email about the contribution you offered as the matching program pieces are confirmed.
         </p>
-        {status === "success-mailto" && (
-          <button
-            type="button"
-            onClick={() => setStatus("idle")}
-            className="mt-4 text-sm font-semibold text-emerald underline underline-offset-4"
-          >
-            Nothing opened? Go back and try again
-          </button>
-        )}
+        <button type="button" onClick={() => setStatus("idle")} className="mt-4 text-sm font-semibold text-emerald underline underline-offset-4">
+          Offer something else
+        </button>
       </div>
     );
   }
@@ -169,8 +167,8 @@ export function GetInvolvedForm() {
         >
           <option value="">Choose one…</option>
           {CONTRIBUTION_OPTIONS.map((option) => (
-            <option key={option} value={option}>
-              {option}
+            <option key={option.value} value={option.value}>
+              {option.value}
             </option>
           ))}
         </select>

@@ -25,7 +25,7 @@ export default async function NewCohortPage() {
       </div>
       <Card>
         <>
-          <AiAssistant kind="cohort" target="#ai-target-cohort" configured={aiConfigured()} placeholder="e.g. Spring 2027 cohort, starts March 1, 10 weeks, Seattle time. Support email program@maps.org" />
+          <AiAssistant kind="cohort" target="#ai-target-cohort" configured={aiConfigured()} placeholder="e.g. Spring 2027 cohort, starts March 1, 10 weeks, Seattle time. Support email mapscombinator@gmail.com" />
           <div id="ai-target-cohort">
             <NewCohortForm />
           </div>

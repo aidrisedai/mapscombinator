@@ -23,7 +23,6 @@ import type { SiteConfig } from "./types";
  * safe fallback or hides the element instead):
  *  - TODO_CONFIRM: formal approval status of the program
  *  - TODO_CONFIRM: permitted use of the MAPS name and official logo assets
- *  - TODO_CONFIRM: public contact email (currently the project owner's email)
  *  - TODO_CONFIRM: cohort dates, capacity, schedule, and selection owner
  *  - TODO_CONFIRM: facility details and whether they may be published
  * ─────────────────────────────────────────────────────────────────────────────
@@ -33,12 +32,10 @@ export const siteConfig: SiteConfig = {
   officialName: "MAPS Combinator",
   shortName: "MAPS Combinator",
   isFormalMapsInitiative: false,
-  contactEmail: "abdulazeezidris28@gmail.com",
+  contactEmail: "mapscombinator@gmail.com",
   locationLabel: "Greater Seattle, Washington",
   combinatorStatus: "Interest List",
   combinatorApplicationsOpen: false,
-  // formEndpoint: "https://…" — set to a vetted form service or API endpoint
-  // to switch forms from the email fallback to direct submission.
   verifiedMetrics: [],
   socialLinks: [],
 };

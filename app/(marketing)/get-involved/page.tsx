@@ -16,28 +16,28 @@ const PATHS = [
     title: "Mentor or hold office hours",
     copy: "Share practical experience in a defined area — engineering, sales, pricing, operations, finance, hiring. Good mentorship asks precise questions, challenges assumptions, and helps a team reach a concrete next step within the 12 weeks.",
     ctaLabel: "Offer Expertise",
-    ctaHref: "#contribute",
+    ctaHref: "#contribute-mentor",
   },
   {
     id: "pilot-partner",
     title: "Be a customer or pilot partner",
     copy: "Give teams access to a real problem in your business, school, clinic, nonprofit, or agency — plus a responsible testing environment and honest feedback. A credible local pilot is worth more to a team than another pitch event.",
     ctaLabel: "Propose a Problem or Pilot",
-    ctaHref: "#contribute",
+    ctaHref: "#contribute-pilot-partner",
   },
   {
     id: "volunteer",
     title: "Volunteer",
     copy: "Help run cohort sessions: operations, participant experience, documentation, outreach, photography, or logistics — through a clearly scoped role with a defined time commitment.",
     ctaLabel: "Volunteer",
-    ctaHref: "#contribute",
+    ctaHref: "#contribute-volunteer",
   },
   {
     id: "sponsor",
     title: "Sponsor or partner",
     copy: "Fund a specific, measurable program need — a workshop series, tooling, a scholarship seat, or Demo Day. Sponsorship must preserve program integrity: it buys real value for teams, not influence over selection.",
     ctaLabel: "Discuss Sponsorship",
-    ctaHref: "#contribute",
+    ctaHref: "#contribute-sponsor",
   },
 ];
 

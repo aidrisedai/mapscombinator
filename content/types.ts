@@ -46,17 +46,13 @@ export type SiteConfig = {
   shortName: string;
   isFormalMapsInitiative: boolean;
   mapsRelationshipCopy?: string;
+  /** Public contact address; website form submissions are also emailed here. */
   contactEmail?: string;
   locationLabel: string;
   physicalAddress?: string;
   combinatorStatus: "Planned" | "Interest List" | "Open" | "Waitlist" | "Closed";
   combinatorApplicationsOpen: boolean;
   combinatorApplicationUrl?: string;
-  /**
-   * Optional endpoint for form submissions (e.g. a Formspree/Basin/own API URL).
-   * When unset, forms fall back to composing a structured email to contactEmail.
-   */
-  formEndpoint?: string;
   verifiedMetrics: VerifiedMetric[];
   socialLinks: SocialLink[];
 };

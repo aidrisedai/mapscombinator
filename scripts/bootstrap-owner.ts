@@ -20,7 +20,7 @@ async function main() {
   try {
     await sql.begin(async (t) => {
       let [org] = await t`select * from organizations order by created_at limit 1`;
-      if (!org) [org] = await t`insert into organizations (name, support_email, reply_to_email) values (${orgName}, ${process.env.EMAIL_REPLY_TO ?? null}, ${process.env.EMAIL_REPLY_TO ?? null}) returning *`;
+      if (!org) [org] = await t`insert into organizations (name, support_email, reply_to_email) values (${orgName}, ${process.env.EMAIL_REPLY_TO || "mapscombinator@gmail.com"}, ${process.env.EMAIL_REPLY_TO || "mapscombinator@gmail.com"}) returning *`;
       const [owner] = await t`select id from accounts where email = ${email} and is_owner`;
       if (owner) {
         console.log(`${email} is already a platform owner.`);

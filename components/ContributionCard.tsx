@@ -1,5 +1,8 @@
 import Link from "next/link";
 
+const ctaClass =
+  "inline-block rounded-full border border-forest px-5 py-2.5 text-sm font-semibold text-forest transition-colors hover:bg-forest hover:text-paper";
+
 export function ContributionCard({
   id,
   title,
@@ -21,12 +24,16 @@ export function ContributionCard({
       <h3 className="font-display text-xl font-bold text-forest">{title}</h3>
       <p className="mt-3 flex-1 leading-relaxed text-ink/85">{copy}</p>
       <div className="mt-5">
-        <Link
-          href={ctaHref}
-          className="inline-block rounded-full border border-forest px-5 py-2.5 text-sm font-semibold text-forest transition-colors hover:bg-forest hover:text-paper"
-        >
-          {ctaLabel}
-        </Link>
+        {ctaHref.startsWith("#") ? (
+          // A plain anchor fires "hashchange", which preselects the matching option in the form below.
+          <a href={ctaHref} className={ctaClass}>
+            {ctaLabel}
+          </a>
+        ) : (
+          <Link href={ctaHref} className={ctaClass}>
+            {ctaLabel}
+          </Link>
+        )}
       </div>
     </article>
   );

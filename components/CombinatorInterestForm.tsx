@@ -1,16 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { STAGE_OPTIONS } from "@/lib/forms";
 import { submitForm } from "@/lib/submit";
 import { Field, Honeypot, inputClass } from "./forms/fields";
-
-const STAGE_OPTIONS = [
-  "Researching a problem",
-  "Talking to potential users",
-  "Building a prototype",
-  "Have early users or customers",
-  "Team formed, ready for a structured program",
-];
 
 type FormState = {
   name: string;
@@ -38,7 +31,7 @@ export function CombinatorInterestForm() {
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
   const [honeypot, setHoneypot] = useState("");
   const [status, setStatus] = useState<
-    "idle" | "submitting" | "success-endpoint" | "success-mailto" | "error"
+    "idle" | "submitting" | "success" | "error"
   >("idle");
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -62,48 +55,35 @@ export function CombinatorInterestForm() {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (honeypot) return;
     if (!validate()) return;
     setStatus("submitting");
-    const result = await submitForm("MAPS Combinator interest", {
+    const result = await submitForm("combinator_interest", {
+      website: honeypot,
       name: form.name,
       email: form.email,
       city: form.city,
       problem: form.problem,
       stage: form.stage,
-      evidenceOfAction: form.evidence,
-      consentToUpdates: form.consent,
+      evidence: form.evidence,
+      consent: form.consent,
     });
     if (result.ok) {
-      setStatus(result.mode === "endpoint" ? "success-endpoint" : "success-mailto");
+      setStatus("success");
+      setForm(INITIAL);
     } else {
       setErrorMessage(result.error);
+      if (result.fieldErrors) setErrors(result.fieldErrors as typeof errors);
       setStatus("error");
     }
   }
 
-  if (status === "success-endpoint" || status === "success-mailto") {
+  if (status === "success") {
     return (
       <div className="rounded-lg border border-success/40 bg-paper p-8" role="status">
-        <p className="font-display text-xl font-bold text-forest">
-          {status === "success-endpoint"
-            ? "You are on the Combinator interest list."
-            : "One more step: send the email draft."}
-        </p>
+        <p className="font-display text-xl font-bold text-forest">You are on the Combinator interest list.</p>
         <p className="mt-3 leading-relaxed text-ink/85">
-          {status === "success-endpoint"
-            ? "We will send program updates — including the application timeline — as details are confirmed."
-            : "We opened a pre-filled email in your mail app with your answers. Press send and you are on the interest list — we will share the application timeline as details are confirmed."}
+          We will send program updates — including the application timeline — as details are confirmed.
         </p>
-        {status === "success-mailto" && (
-          <button
-            type="button"
-            onClick={() => setStatus("idle")}
-            className="mt-4 text-sm font-semibold text-emerald underline underline-offset-4"
-          >
-            Nothing opened? Go back and try again
-          </button>
-        )}
       </div>
     );
   }

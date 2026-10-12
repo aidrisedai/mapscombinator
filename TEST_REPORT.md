@@ -12,7 +12,7 @@ Date: 2026-10-02. Environment: cloud dev container, Node 22.22, Postgres 16.10 (
 |---|---|
 | `npm run lint` | ✅ 0 problems |
 | `npm run typecheck` | ✅ 0 errors |
-| `npm test` (Vitest + real Postgres) | ✅ 10 files, 44 tests passed (latest run) |
+| `npm test` (Vitest + real Postgres) | ✅ 11 files, 48 tests passed (latest run) |
 | `npm run build` | ✅ succeeded (all platform routes dynamic; marketing pages static) |
 | `npm run e2e` against `npm run dev` | ✅ 18/18 steps |
 | `npm run e2e` against the **production build** (`npm run start`) | ✅ 18/18 steps |
@@ -116,6 +116,24 @@ Fixed in this pass:
 - Any email in a cohort's outbox can be opened and read as it is (or will be) sent, in any state, from Delivery, Sent emails, invitations and the startup email history.
 - Single-use setup links are replaced with a placeholder. A test checks that the real token never appears in the view, and that other cohorts' admins and founders can't open it.
 - `npm test`: 10 files, 44 tests passed. Browser check with the email worker off: a queued message and a queued invitation both display.
+
+## Website forms and contact email (2026-10-12)
+
+- The public contact email is now mapscombinator@gmail.com everywhere: site config, footer, contact and privacy pages, and the default reply-to for program emails. Migration `006` updates the stored support and reply-to addresses where they were empty or set to the owner's personal address.
+- Get Involved and Combinator interest forms now POST to `/api/public/submit` (same-origin, rate limited, honeypot). Submissions are stored (migration `007`), emailed to the program inbox with a typed subject and the submitter as reply-to, and listed for owners under Manage → Website submissions.
+- `tests/submissions.test.ts` (4 tests) covers:
+  - storage, the inbox email (recipient, subject, reply-to, body);
+  - the interest subject;
+  - validation, the honeypot and the per-email rate limit;
+  - owner-only access and status updates.
+- `npm test`: 11 files, 48 tests passed.
+- Browser check on the dev server:
+  - the CTA buttons preselect the right option, including from a deep link;
+  - both forms submit without opening an email app;
+  - the inbox receives both subjects, and the admin inbox shows them with "2 new";
+  - status and note save;
+  - pages are 390 px wide on a phone, with no sideways scrolling.
+- **Fixed during testing:** answers displayed out of order, because jsonb reorders object keys. They're now stored as an ordered list.
 
 ## Acceptance matrix
 

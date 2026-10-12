@@ -33,6 +33,16 @@ Cohort → **Office hours** → **Add session**. For a weekly series, tick *Repe
 
 To change one date, edit it with *This occurrence*. To change all remaining dates, choose *This and future occurrences*; past sessions are never changed. **Cancel** keeps the session visible as cancelled, and offers a cancellation email (pre-checked if that session was emailed before).
 
+## Website submissions (Get Involved and Combinator interest)
+The forms on the public website now save straight to the platform instead of opening the visitor's email app.
+- On **Get Involved**, the buttons (Offer Expertise, Propose a Problem or Pilot, Volunteer, Discuss Sponsorship) jump to the form with the matching option already chosen.
+- Every submission is emailed to **mapscombinator@gmail.com**. Replying to that email goes straight to the person. Subjects are easy to filter in Gmail:
+  - `[Get Involved] Mentor / office hours — Name (Organization)`, and likewise for Pilot partner, Volunteer, Sponsor / partner and Program updates;
+  - `[Combinator Interest] Name — Stage`.
+- Platform owners see everything under **Manage → Website submissions** (the button shows how many are new). Open one to read it, reply by email, set its status (New, Contacted, Done, Archived) and leave an internal note.
+- Spam protection: a hidden bot trap field and limits of 10 submissions per hour per network and 5 per hour per email address.
+- If `EMAIL_SANDBOX_ALLOWLIST` is set in Railway, add mapscombinator@gmail.com to it, or these notifications won't be sent. Submissions are still saved and visible in the admin inbox either way.
+
 ## Emails (acceptance, welcome and messages to startups)
 Cohort → **Emails**.
 
