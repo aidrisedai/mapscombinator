@@ -106,11 +106,19 @@ export async function processOutbox(limit = 20): Promise<number> {
   return batch.length;
 }
 
-/** Admin retry of a failed message (same idempotency key at the provider). */
+/** Templates whose single-use secret is cleared once they stop; they must be re-issued, not re-sent. */
+export const SECRET_TEMPLATES = ["invitation", "password_reset", "email_change", "verification_code"];
+export const SANDBOX_NOTE = "Not sent: sandbox mode%";
+
+/**
+ * Admin retry of a failed message, or of one held back by test mode (same
+ * idempotency key at the provider).
+ */
 export async function retryOutbox(db: Db, id: string, cohortId: string | null) {
   const rows = await db`
     update email_outbox set state = 'queued', next_attempt_at = now(), attempts = 0, last_error = null, updated_at = now()
-    where id = ${id} and state = 'failed' and (${cohortId}::uuid is null or cohort_id = ${cohortId})
+    where id = ${id} and (${cohortId}::uuid is null or cohort_id = ${cohortId})
+      and (state = 'failed' or (state = 'suppressed' and last_error like ${SANDBOX_NOTE} and template <> all(${SECRET_TEMPLATES})))
     returning id, related_type, related_id`;
   if (rows[0]) await syncRelated(db, rows[0].related_type, rows[0].related_id, "queued");
   return rows.length > 0;

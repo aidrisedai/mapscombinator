@@ -374,11 +374,11 @@ export async function getCohortEmail(actor: Account, cohortId: string, outboxId:
     from email_outbox o left join accounts a on a.id = o.authorized_by
     where o.id = ${outboxId} and o.cohort_id = ${cohortId}`;
   if (!m) throw notFound("We couldn't find that email.");
-  const masked = { link: `${env().APP_URL}/accept-invitation#${encodeURIComponent(SECRET_LINK_NOTE)}` };
+  const masked = { link: `${env().APP_URL}/accept-invitation#${encodeURIComponent(SECRET_LINK_NOTE)}`, code: "••••••" };
   const r = render(m.template, m.payload, masked);
   return {
     email: m,
     rendered: { subject: r.subject, html: r.html, text: r.text },
-    hidesLink: m.template === "invitation" || m.template === "password_reset" || m.template === "email_change",
+    hidesLink: m.template === "invitation" || m.template === "password_reset" || m.template === "email_change" || m.template === "verification_code",
   };
 }

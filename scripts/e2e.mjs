@@ -52,6 +52,22 @@ async function waitForMail(email, subjectIncludes, timeout = 30000) {
   }
   throw new Error(`no mail to ${email} (${subjectIncludes ?? "any"}) within ${timeout}ms — is the worker running?`);
 }
+/** Step 1 of accepting an invitation: request the emailed code and enter it. */
+async function confirmEmailCode(page, email, { tryWrongFirst = false } = {}) {
+  await page.getByRole("button", { name: "Email me a code" }).click();
+  await page.getByLabel("6-digit code").waitFor();
+  const m = await waitForMail(email, "verification code");
+  const code = m.text.match(/Your code: (\d{6})/)?.[1];
+  if (!code) throw new Error("code missing from email");
+  if (tryWrongFirst) {
+    await page.getByLabel("6-digit code").fill(code === "000000" ? "111111" : "000000");
+    await page.getByRole("button", { name: "Confirm email" }).click();
+    await page.getByText(/That code isn't right/).waitFor();
+  }
+  await page.getByLabel("6-digit code").fill(code);
+  await page.getByRole("button", { name: "Confirm email" }).click();
+  await page.getByText("Email confirmed").waitFor();
+}
 const linkIn = (m) => m.text.match(/https?:\/\/\S+/g).find((u) => u.includes("accept-invitation") || u.includes("/auth/confirm"));
 
 const exe = existsSync("/opt/pw-browsers/chromium") ? "/opt/pw-browsers/chromium" : undefined;
@@ -142,10 +158,14 @@ try {
     if (!m.text.includes("Set up your account")) throw new Error("acceptance email lacks the setup button");
   });
 
-  await step("founder sets a password without ChatGPT or a platform-sharing step", async () => {
+  await step("founder confirms their email with a code, then sets a password", async () => {
     await founder.goto(founderInviteLink);
     await founder.getByText(`Acme ${run}`).first().waitFor();
     await shot(founder, "04-founder-accept");
+    // Without the emailed code there is no password form at all.
+    if (await founder.getByLabel(/^Password/).count()) throw new Error("password form shown before the email was confirmed");
+    await confirmEmailCode(founder, founderEmail, { tryWrongFirst: true });
+    await shot(founder, "04b-founder-email-confirmed");
     await founder.getByLabel(/^Your name/).fill("Fatima Founder");
     await founder.getByLabel(/^Password/).fill(PW);
     await founder.getByLabel(/^Confirm password/).fill(PW);
@@ -237,6 +257,7 @@ try {
     const m = await waitForMail(cofounderEmail, "accepted into");
     const co = await newPage();
     await co.goto(linkIn(m));
+    await confirmEmailCode(co, cofounderEmail);
     await co.getByLabel(/^Your name/).fill("Cole Cofounder");
     await co.getByLabel(/^Password/).fill(PW);
     await co.getByLabel(/^Confirm password/).fill(PW);
@@ -305,6 +326,7 @@ try {
       const m = await waitForMail(mentorEmail, "invited");
       mentorPage = await newPage();
       await mentorPage.goto(linkIn(m));
+      await confirmEmailCode(mentorPage, mentorEmail);
       await mentorPage.getByLabel(/^Your name/).fill("Maya Mentor");
       await mentorPage.getByLabel(/^Password/).fill(PW);
       await mentorPage.getByLabel(/^Confirm password/).fill(PW);

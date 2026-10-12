@@ -32,7 +32,7 @@ Browser ──HTTPS──▶ Railway service (Next.js server + outbox/slot worke
 2. Create an API key with "Sending access" → `RESEND_API_KEY`.
 3. Add a webhook endpoint `https://<APP_URL>/api/webhooks/resend` for `email.sent`, `email.delivered`, `email.bounced`, `email.complained` and `email.failed`, then copy its signing secret → `RESEND_WEBHOOK_SECRET`. Without this, messages stay at "Accepted by provider" and are never shown as delivered.
 4. Set `EMAIL_FROM` to an address on the verified domain, e.g. `MAPS Combinator <program@yourdomain.org>`, and `EMAIL_REPLY_TO` to a monitored inbox (the program uses `mapscombinator@gmail.com`).
-5. **Staging/acceptance**: set `EMAIL_SANDBOX_ALLOWLIST=you@yourdomain.org,tester@...` so only approved test inboxes get mail; everything else is recorded as "Not sent (sandbox)". Include `mapscombinator@gmail.com` so website form notifications still arrive. **Clear it for production.**
+5. **Staging/acceptance**: set `EMAIL_SANDBOX_ALLOWLIST=you@yourdomain.org,tester@...` so only approved test inboxes get mail; everything else is recorded as "Not sent (sandbox)". Include `mapscombinator@gmail.com` so website form notifications still arrive. It's **ignored when `APP_ENV=production`**: the live site always sends for real (you can delete the variable there).
 
 ## 3. Railway
 

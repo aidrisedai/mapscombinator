@@ -1,10 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
-import { ActionForm, TextField } from "@/components/ui/forms";
+import { useCallback, useEffect, useState, useTransition } from "react";
+import { ActionForm, TextField, inputClass } from "@/components/ui/forms";
 import { KeyValue, LinkButton, Notice, buttonClass } from "@/components/ui/primitives";
-import { acceptExistingAction, acceptNewAction, inspectInvitationAction, requestInviteAction, switchAccountAction, type InvitationInspection } from "../actions";
+import {
+  acceptExistingAction,
+  acceptNewAction,
+  inspectInvitationAction,
+  requestInviteAction,
+  sendInvitationCodeAction,
+  switchAccountAction,
+  verifyInvitationCodeAction,
+  type InvitationInspection,
+} from "../actions";
 
 const PENDING = "maps:pending-invitation";
 
@@ -155,10 +164,23 @@ export function AcceptInvitation() {
       </>
     );
 
+  if (info.needsCode && !info.emailVerified)
+    return (
+      <>
+        {header}
+        <EmailCodeStep token={token} email={info.email} onVerified={() => inspect(token)} />
+      </>
+    );
+
   return (
     <>
       {header}
-      <h2 className="mt-6 text-base font-semibold">Set up your account</h2>
+      {info.needsCode && (
+        <p className="mt-6 flex items-center gap-2 text-sm font-medium text-success" role="status">
+          <span aria-hidden="true">✓</span> Email confirmed
+        </p>
+      )}
+      <h2 className="mt-4 text-base font-semibold">{info.needsCode ? "Step 2 of 2: " : ""}Set up your account</h2>
       <p className="mt-1 text-sm text-ink/70">You&apos;ll sign in with {info.email} and this password.</p>
       <div className="mt-4">
         <ActionForm
@@ -176,6 +198,103 @@ export function AcceptInvitation() {
         </ActionForm>
       </div>
     </>
+  );
+}
+
+/** Step 1: prove control of the invited inbox with a 6-digit emailed code. */
+function EmailCodeStep({ token, email, onVerified }: { token: string; email: string; onVerified: () => Promise<void> }) {
+  const [sent, setSent] = useState<{ minutes: number } | null>(null);
+  const [code, setCode] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [note, setNote] = useState<string | null>(null);
+  const [cooldown, setCooldown] = useState(0);
+  const [pending, start] = useTransition();
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [cooldown]);
+
+  const send = () =>
+    start(async () => {
+      try {
+        const r = await sendInvitationCodeAction(fd(token));
+        if (!r.ok) return setError(r.error);
+        setError(null);
+        setSent({ minutes: r.data.minutes });
+        setNote(sent ? "A new code is on its way. Only the newest code works." : null);
+        setCode("");
+        setCooldown(30);
+      } catch {
+        setError("We couldn't reach the server. Check your connection and try again.");
+      }
+    });
+
+  const verify = (e: React.FormEvent) => {
+    e.preventDefault();
+    start(async () => {
+      try {
+        const f = fd(token);
+        f.set("code", code);
+        const r = await verifyInvitationCodeAction(f);
+        if (!r.ok) return setError(r.error);
+        setError(null);
+        await onVerified();
+      } catch {
+        setError("We couldn't reach the server. Check your connection and try again.");
+      }
+    });
+  };
+
+  return (
+    <div className="mt-6">
+      <h2 className="text-base font-semibold">Step 1 of 2: Confirm your email</h2>
+      {!sent ? (
+        <>
+          <p className="mt-1 text-sm text-ink/70">
+            To make sure this invitation reached the right person, we&apos;ll email a 6-digit code to <strong>{email}</strong>. Then you&apos;ll choose your password.
+          </p>
+          {error && <p role="alert" className="mt-3 rounded-md border border-error/40 bg-error/5 px-3 py-2 text-sm text-error">{error}</p>}
+          <button type="button" className={`${buttonClass("primary")} mt-4`} disabled={pending} onClick={send}>
+            {pending ? "Sending…" : "Email me a code"}
+          </button>
+        </>
+      ) : (
+        <form onSubmit={verify} className="mt-2 space-y-3" noValidate>
+          <p className="text-sm text-ink/70">
+            We sent a code to <strong>{email}</strong>. It expires in {sent.minutes} minutes. Check your spam folder if you don&apos;t see it.
+          </p>
+          {note && <p role="status" className="text-sm text-success">{note}</p>}
+          <div>
+            <label htmlFor="invite-code" className="block text-sm font-semibold text-ink">6-digit code</label>
+            <input
+              id="invite-code"
+              name="code"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              pattern="[0-9]*"
+              maxLength={7}
+              value={code}
+              onChange={(e) => setCode(e.target.value.replace(/[^0-9 ]/g, ""))}
+              aria-invalid={Boolean(error)}
+              aria-describedby={error ? "invite-code-err" : undefined}
+              className={`${inputClass} mt-1.5 max-w-[12rem] text-center font-mono text-xl tracking-[0.4em]`}
+              autoFocus
+            />
+          </div>
+          {error && <p id="invite-code-err" role="alert" className="rounded-md border border-error/40 bg-error/5 px-3 py-2 text-sm text-error">{error}</p>}
+          <div className="flex flex-wrap items-center gap-3">
+            <button type="submit" className={buttonClass("primary")} disabled={pending || code.replace(/\D/g, "").length !== 6}>
+              {pending ? "Checking…" : "Confirm email"}
+            </button>
+            <button type="button" className={buttonClass("ghost")} disabled={pending || cooldown > 0} onClick={send}>
+              {cooldown > 0 ? `Send a new code (${cooldown}s)` : "Send a new code"}
+            </button>
+          </div>
+        </form>
+      )}
+    </div>
   );
 }
 

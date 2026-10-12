@@ -6,7 +6,7 @@ import { email as emailSchema, text } from "@/lib/validation";
 import { audit } from "../audit";
 import { cohortAccess, isUuid, requireCohortAdmin } from "../authz";
 import { sql, tx, type Db, type Tx } from "../db";
-import { enqueueEmail, retryOutbox } from "../email/outbox";
+import { enqueueEmail, retryOutbox, SANDBOX_NOTE, SECRET_TEMPLATES } from "../email/outbox";
 import { render } from "../email/templates";
 import { env } from "../env";
 import { conflict, forbidden, invalid, notFound } from "../errors";
@@ -357,7 +357,7 @@ export async function listCohortOutbox(actor: Account, cohortId: string, f: { st
   const state = f.state && (OUTBOX_STATES as readonly string[]).includes(f.state) ? f.state : null;
   const page = Math.max(1, Math.min(1000, Math.floor(f.page ?? 1)));
   const rows = await db`
-    select id, created_at, updated_at, event_type, recipient_email, state, attempts, attempted_at, last_error
+    select id, created_at, updated_at, event_type, template, recipient_email, state, attempts, attempted_at, last_error
     from email_outbox
     where cohort_id = ${cohortId} and (${state}::text is null or state = ${state})
     order by created_at desc, id
@@ -378,7 +378,55 @@ export async function retryCohortEmail(actor: Account, cohortId: string, outboxI
   await tx(async (t) => {
     await requireCohortAdmin(actor, cohortId, t);
     const ok = await retryOutbox(t, outboxId, cohortId);
-    if (!ok) throw conflict("This message is no longer in a failed state. Reload to see its current status.");
+    if (!ok) throw conflict("This message can't be sent again from here. Reload to see its current status; for an invitation, use Resend.");
     await audit(t, { actorId: actor.id, action: "email.retry", objectType: "email_outbox", objectId: outboxId, cohortId });
   });
+}
+
+const BLOCKED_DAYS = 14;
+
+/** Emails in this cohort that test mode held back: open invitations to re-issue, and recent other emails to send. */
+export async function blockedByTestMode(cohortId: string) {
+  const [inv] = await sql()`
+    select count(*)::int as n from invitations i
+    where i.cohort_id = ${cohortId} and i.state not in ('accepted', 'revoked') and i.delivery_state = 'suppressed'
+      and exists (select 1 from email_outbox o where o.related_type = 'invitation' and o.related_id = i.id and o.template = 'invitation' and o.last_error like ${SANDBOX_NOTE})`;
+  const [other] = await sql()`
+    select count(*)::int as n from email_outbox
+    where cohort_id = ${cohortId} and state = 'suppressed' and last_error like ${SANDBOX_NOTE}
+      and template <> all(${SECRET_TEMPLATES}) and event_type <> 'test' and created_at > now() - make_interval(days => ${BLOCKED_DAYS})`;
+  return { invitations: inv.n as number, emails: other.n as number };
+}
+
+/**
+ * Send everything test mode held back. Invitations get a fresh link (the old
+ * one was never delivered); other recent emails are sent as they were.
+ * Expired verification codes and test copies are skipped.
+ */
+export async function resendBlockedByTestMode(actor: Account, cohortId: string) {
+  await requireCohortAdmin(actor, cohortId);
+  const invs = await sql()`
+    select i.id from invitations i
+    where i.cohort_id = ${cohortId} and i.state not in ('accepted', 'revoked') and i.delivery_state = 'suppressed'
+      and exists (select 1 from email_outbox o where o.related_type = 'invitation' and o.related_id = i.id and o.template = 'invitation' and o.last_error like ${SANDBOX_NOTE})`;
+  let invitations = 0;
+  const problems: string[] = [];
+  for (const i of invs) {
+    try {
+      await resendInvitation(actor, i.id);
+      invitations++;
+    } catch (err) {
+      problems.push(err instanceof Error ? err.message : "failed");
+    }
+  }
+  const emails = await tx(async (t) => {
+    const rows = await t`
+      update email_outbox set state = 'queued', next_attempt_at = now(), attempts = 0, last_error = null, updated_at = now()
+      where cohort_id = ${cohortId} and state = 'suppressed' and last_error like ${SANDBOX_NOTE}
+        and template <> all(${SECRET_TEMPLATES}) and event_type <> 'test' and created_at > now() - make_interval(days => ${BLOCKED_DAYS})
+      returning id`;
+    await audit(t, { actorId: actor.id, action: "email.resend_blocked", objectType: "cohort", objectId: cohortId, cohortId, summary: { invitations, emails: rows.length } });
+    return rows.length;
+  });
+  return { invitations, emails, problems };
 }

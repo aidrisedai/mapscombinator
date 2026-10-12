@@ -33,6 +33,16 @@ Cohort → **Office hours** → **Add session**. For a weekly series, tick *Repe
 
 To change one date, edit it with *This occurrence*. To change all remaining dates, choose *This and future occurrences*; past sessions are never changed. **Cancel** keeps the session visible as cancelled, and offers a cancellation email (pre-checked if that session was emailed before).
 
+## How invited people set up their account
+1. They open the link in their acceptance or invitation email.
+2. **Step 1, confirm your email:** they press **Email me a code** and enter the 6-digit code sent to the invited address. Codes expire after 10 minutes, only the newest one works, and 5 wrong tries end that code. **Send a new code** is available after 30 seconds, up to 5 codes per 15 minutes.
+3. **Step 2, set up your account:** only after the code is confirmed do they choose their name and password. They then land in the platform and get the welcome email.
+
+People who already have an account just sign in and accept; they don't need a code. In Delivery, verification-code emails show as "Email verification code", with the code itself hidden.
+
+## Test mode
+On the live site (`APP_ENV=production`) every email is sent for real. `EMAIL_SANDBOX_ALLOWLIST` is ignored there and only applies to staging and development copies. If emails were held back while test mode was on, **Manage → cohort → Delivery** shows a notice with **Send them now**. Invitations are re-sent with a fresh link; other emails from the last 14 days are sent as they were. Old verification codes and test copies are skipped, since they've expired or are no longer useful.
+
 ## Website submissions (Get Involved and Combinator interest)
 The forms on the public website now save straight to the platform instead of opening the visitor's email app.
 - On **Get Involved**, the buttons (Offer Expertise, Propose a Problem or Pilot, Volunteer, Discuss Sponsorship) jump to the form with the matching option already chosen.

@@ -3,11 +3,14 @@ import Link from "next/link";
 import { ActionButton } from "@/components/ui/forms";
 import { Badge, Card, EmptyState, PageHeader, Pagination, cx, type BadgeTone } from "@/components/ui/primitives";
 import { requireCohortAdmin } from "@/lib/server/authz";
-import { listCohortOutbox, OUTBOX_STATES } from "@/lib/server/domain/invitations";
+import { blockedByTestMode, listCohortOutbox, OUTBOX_STATES } from "@/lib/server/domain/invitations";
+import { env } from "@/lib/server/env";
+import { OpForm } from "@/components/office-hours/OpForm";
+import { Notice } from "@/components/ui/primitives";
 import { load, one } from "@/lib/server/page";
 import { requirePageAccount } from "@/lib/server/session";
 import { formatInstant } from "@/lib/time";
-import { retryEmailAction } from "../../../actions";
+import { resendBlockedAction, retryEmailAction } from "../../../actions";
 
 export const metadata: Metadata = { title: "Email delivery" };
 
@@ -19,12 +22,13 @@ const STATE: Record<string, { label: string; tone: BadgeTone; meaning: string }>
   bounced: { label: "Bounced", tone: "danger", meaning: "The recipient's server rejected it. Check the address before inviting again." },
   complained: { label: "Complained", tone: "danger", meaning: "The recipient marked it as spam. Avoid emailing them again without talking first." },
   failed: { label: "Failed", tone: "danger", meaning: "Couldn't be sent after retries. You can retry it." },
-  suppressed: { label: "Not sent (sandbox/test mode)", tone: "warn", meaning: "Deliberately not sent, e.g. test mode, a revoked invitation or a recipient who lost access. See the note." },
+  suppressed: { label: "Not sent", tone: "warn", meaning: "Deliberately not sent, e.g. test mode was on, a revoked invitation or a recipient who lost access. See the note." },
 };
 
 const EVENT: Record<string, string> = {
   invitation: "Invitation",
   welcome: "Welcome",
+  verification_code: "Email verification code",
   message: "Message to startups",
   cohort_added: "Added as advisor",
   test: "Test (to you)",
@@ -42,7 +46,11 @@ export default async function DeliveryPage({ params, searchParams }: { params: P
   const account = await requirePageAccount(`/manage/cohorts/${cohortId}/delivery`);
   const { cohort } = await load(() => requireCohortAdmin(account, cohortId));
   const page = Number(one(sp.page)) || 1;
-  const data = await listCohortOutbox(account, cohort.id, { state: one(sp.state), page });
+  const [data, blocked] = await Promise.all([listCohortOutbox(account, cohort.id, { state: one(sp.state), page }), blockedByTestMode(cohort.id)]);
+  const e = env();
+  const testModeOn = e.APP_ENV !== "production" && Boolean(e.EMAIL_SANDBOX_ALLOWLIST?.trim());
+  const sandboxed = (m: Record<string, unknown>) => m.state === "suppressed" && String(m.last_error ?? "").startsWith("Not sent: sandbox mode");
+  const secret = (m: Record<string, unknown>) => ["invitation", "password_reset", "email_change", "verification_code"].includes(m.template as string);
   const tz = cohort.timezone;
   const base = `/manage/cohorts/${cohort.id}/delivery`;
   const total = Object.values(data.counts).reduce((a, b) => a + (b ?? 0), 0);
@@ -57,6 +65,26 @@ export default async function DeliveryPage({ params, searchParams }: { params: P
   return (
     <div className="space-y-6">
       <PageHeader title="Email delivery" description="Every email this cohort has queued: invitations, weekly guide notices, announcements and office-hours notices. Each recipient gets their own message." />
+
+      {blocked.invitations + blocked.emails > 0 && (
+        <Notice tone={testModeOn ? "warn" : "info"} title="Some emails were held back by test mode">
+          <p>
+            {blocked.invitations > 0 && `${blocked.invitations} invitation${blocked.invitations === 1 ? "" : "s"}`}
+            {blocked.invitations > 0 && blocked.emails > 0 && " and "}
+            {blocked.emails > 0 && `${blocked.emails} other email${blocked.emails === 1 ? "" : "s"} from the last 14 days`} weren&apos;t sent.{" "}
+            {testModeOn
+              ? "Test mode is still on here (EMAIL_SANDBOX_ALLOWLIST is set), so resending would be held back again."
+              : "Email is now sent for real. Invitations get a fresh link; older links never reached anyone."}
+          </p>
+          {!testModeOn && (
+            <div className="mt-3">
+              <OpForm action={resendBlockedAction} submitLabel="Send them now" pendingLabel="Sending…" successMessage="Queued.">
+                <input type="hidden" name="cohortId" value={cohort.id} />
+              </OpForm>
+            </div>
+          )}
+        </Notice>
+      )}
 
       <nav aria-label="Filter by status" className="flex flex-wrap gap-2">
         <FilterChip href={href(null)} active={!data.state} label={`All (${total})`} />
@@ -101,6 +129,9 @@ export default async function DeliveryPage({ params, searchParams }: { params: P
                     <td className="max-w-xs break-words px-3 py-2.5 text-xs text-ink/70">{(m.last_error as string) || "—"}</td>
                     <td className="space-y-1.5 whitespace-nowrap px-3 py-2.5">
                       <Link href={`${base}/${m.id}`} className="block text-sm font-medium text-emerald hover:text-forest">View</Link>
+                      {sandboxed(m) && !secret(m) && !testModeOn && (
+                        <ActionButton action={retryEmailAction} fields={{ cohortId: cohort.id, outboxId: m.id as string }} label="Send now" pendingLabel="Queuing…" />
+                      )}
                       {m.state === "failed" && (
                         <ActionButton action={retryEmailAction} fields={{ cohortId: cohort.id, outboxId: m.id as string }} label="Retry" pendingLabel="Queuing…" />
                       )}

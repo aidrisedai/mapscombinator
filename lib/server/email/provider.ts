@@ -14,7 +14,8 @@ let client: Resend | undefined;
 
 export async function deliver(to: string, msg: Rendered, idempotencyKey: string, replyTo?: string | null): Promise<SendResult> {
   const e = env();
-  const allow = e.EMAIL_SANDBOX_ALLOWLIST?.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+  // Test mode (allowlist) applies only outside production: on the live site every email is sent for real.
+  const allow = e.APP_ENV === "production" ? undefined : e.EMAIL_SANDBOX_ALLOWLIST?.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
   if (e.EMAIL_PROVIDER === "log") {
     // Development mailbox: written to disk, never reported as sent.
     const dir = join(process.cwd(), ".data", "mail");

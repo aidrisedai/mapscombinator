@@ -44,12 +44,16 @@ function richHtml(body: string): string {
     .join("");
 }
 
-type Block = { rich?: string; p?: string; kv?: [string, string | null | undefined][]; button?: { label: string; url: string }; small?: string };
+type Block = { code?: string; rich?: string; p?: string; kv?: [string, string | null | undefined][]; button?: { label: string; url: string }; small?: string };
 
 function compose(subject: string, org: string, blocks: Block[], support?: string | null): Rendered {
   const text: string[] = [];
   const html: string[] = [];
   for (const b of blocks) {
+    if (b.code) {
+      text.push(`Your code: ${b.code}`);
+      html.push(`<p style="margin:8px 0 24px;font-size:32px;font-weight:700;letter-spacing:8px;font-family:ui-monospace,Menlo,monospace;color:#123d2b">${esc(b.code)}</p>`);
+    }
     if (b.rich) {
       text.push(b.rich.replace(/\r\n?/g, "\n").trim());
       html.push(richHtml(b.rich));
@@ -109,7 +113,8 @@ export type TemplateName =
   | "booking_cancelled"
   | "booking_rescheduled"
   | "cohort_added"
-  | "custom";
+  | "custom"
+  | "verification_code";
 
 type P = Record<string, string | null | undefined>;
 
@@ -137,6 +142,12 @@ export function render(template: TemplateName, p: P, s: P = {}): Rendered {
         ],
         p.support,
       );
+    case "verification_code":
+      return compose(`Your ${org} verification code`, org, [
+        { p: `Use this code to confirm your email and finish setting up your ${org} account${p.cohort ? ` for ${p.cohort}` : ""}:` },
+        { code: s.code ?? "" },
+        { small: `The code expires in ${p.minutes ?? "10"} minutes and works once. If you didn't ask for it, you can ignore this email; nobody can use your invitation without it.` },
+      ], p.support);
     case "custom":
       return compose(p.subject ?? "", org, [
         { rich: p.body ?? "" },

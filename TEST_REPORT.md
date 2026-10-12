@@ -12,7 +12,7 @@ Date: 2026-10-02. Environment: cloud dev container, Node 22.22, Postgres 16.10 (
 |---|---|
 | `npm run lint` | ✅ 0 problems |
 | `npm run typecheck` | ✅ 0 errors |
-| `npm test` (Vitest + real Postgres) | ✅ 11 files, 48 tests passed (latest run) |
+| `npm test` (Vitest + real Postgres) | ✅ 12 files, 52 tests passed (latest run) |
 | `npm run build` | ✅ succeeded (all platform routes dynamic; marketing pages static) |
 | `npm run e2e` against `npm run dev` | ✅ 18/18 steps |
 | `npm run e2e` against the **production build** (`npm run start`) | ✅ 18/18 steps |
@@ -134,6 +134,22 @@ Fixed in this pass:
   - status and note save;
   - pages are 390 px wide on a phone, with no sideways scrolling.
 - **Fixed during testing:** answers displayed out of order, because jsonb reorders object keys. They're now stored as an ordered list.
+
+## Email code before account setup; real email in production (2026-10-12)
+
+- New accounts must confirm the invited inbox with a 6-digit emailed code before the password form appears, and the server enforces this too (migration `008`). Owner bootstrap links are exempt, since the operator issues them from the command line.
+- `tests/verification.test.ts` (4 tests) covers:
+  - no account until the code is confirmed;
+  - codes have 6 digits and can be typed with spaces;
+  - wrong, stale, expired and over-tried codes are rejected, and only the newest code works;
+  - send limits;
+  - revoked or replaced links are refused;
+  - the code is hidden in the admin email view;
+  - resending emails that test mode held back.
+- **Fixed during testing:** wrong-code attempts were rolled back together with the error, so failed tries weren't counted (it would have allowed unlimited guessing, limited only by IP). The counter now commits separately.
+- `npm test`: 12 files, 52 tests passed.
+- `npm run e2e` (dev server): 20/20 steps. The founder (including one wrong code), cofounder and mentor each confirm a code before setting a password, and the password form doesn't exist before then.
+- Test mode (`EMAIL_SANDBOX_ALLOWLIST`) no longer applies when `APP_ENV=production`. Delivery offers "Send them now" for emails it held back.
 
 ## Acceptance matrix
 

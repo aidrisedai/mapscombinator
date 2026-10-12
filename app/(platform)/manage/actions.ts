@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { act, obj, str } from "@/lib/server/action";
 import { removeOwner, setAccountState } from "@/lib/server/domain/accounts";
 import { createCohort, revokeCohortRole, transitionCohort, updateCohortSettings, type CohortSettingsInput } from "@/lib/server/domain/cohorts";
-import { createInvitation, previewInvitation, resendInvitation, retryCohortEmail, revokeInvitation, type InviteInput } from "@/lib/server/domain/invitations";
+import { createInvitation, previewInvitation, resendBlockedByTestMode, resendInvitation, retryCohortEmail, revokeInvitation, type InviteInput } from "@/lib/server/domain/invitations";
 import { updateOrganization } from "@/lib/server/domain/organization";
 import { addContact, createStartup, getReturnableStartup, removeMembership, updateStartupProfile, withdrawEnrollment } from "@/lib/server/domain/startups";
 import { addLinkResource, publishWeek, removeResource, saveWeekDraft, unpublishWeek } from "@/lib/server/domain/weeks";
@@ -207,6 +207,14 @@ export async function removeResourceAction(fd: FormData) {
 
 export async function retryEmailAction(fd: FormData) {
   return act((actor) => retryCohortEmail(actor, str(fd, "cohortId"), str(fd, "outboxId")));
+}
+
+export async function resendBlockedAction(fd: FormData) {
+  return act(async (actor) => {
+    const r = await resendBlockedByTestMode(actor, str(fd, "cohortId"));
+    const parts = [r.invitations && `${r.invitations} invitation${r.invitations === 1 ? "" : "s"} re-sent with a fresh link`, r.emails && `${r.emails} other email${r.emails === 1 ? "" : "s"} queued`].filter(Boolean);
+    return { message: `${parts.join(" and ") || "Nothing to resend"}.${r.problems.length ? ` Not done: ${r.problems.join("; ")}` : ""}` };
+  });
 }
 
 // ───────────────────────────── Platform (owners) ───────────────────────────

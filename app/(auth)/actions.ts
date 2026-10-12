@@ -6,6 +6,7 @@ import { clientIp, str } from "@/lib/server/action";
 import { runAction } from "@/lib/server/errors";
 import { acceptAsExisting, acceptWithNewAccount, confirmEmailToken, requestPasswordReset, setNewPassword, signIn } from "@/lib/server/domain/accounts";
 import { lookupInvitation, requestNewInvitation } from "@/lib/server/domain/invitations";
+import { invitationEmailVerified, needsEmailCode, sendInvitationCode, verifyInvitationCode } from "@/lib/server/domain/verification";
 import { sql } from "@/lib/server/db";
 import { getViewer, requireAccount } from "@/lib/server/session";
 import { formatInstant } from "@/lib/time";
@@ -82,6 +83,9 @@ export type InvitationInspection =
       viewer: "none" | "match" | "mismatch";
       viewerEmail: string | null;
       accountExists: boolean;
+      /** New accounts confirm the invited inbox with an emailed code first. */
+      needsCode: boolean;
+      emailVerified: boolean;
     };
 
 /** Read-only: the token arrives in a POST body (from the URL fragment), never in a logged URL. */
@@ -106,7 +110,17 @@ export async function inspectInvitationAction(fd: FormData): Promise<InvitationI
     viewer: !viewerEmail ? "none" : viewerEmail === inv.email ? "match" : "mismatch",
     viewerEmail,
     accountExists: Boolean(existing),
+    needsCode: needsEmailCode(inv.role),
+    emailVerified: inv.status === "open" && needsEmailCode(inv.role) ? await invitationEmailVerified(inv.id) : false,
   };
+}
+
+export async function sendInvitationCodeAction(fd: FormData) {
+  return runAction(async () => sendInvitationCode(str(fd, "token"), await clientIp()));
+}
+
+export async function verifyInvitationCodeAction(fd: FormData) {
+  return runAction(async () => verifyInvitationCode(str(fd, "token"), str(fd, "code"), await clientIp()));
 }
 
 export async function requestInviteAction(fd: FormData) {

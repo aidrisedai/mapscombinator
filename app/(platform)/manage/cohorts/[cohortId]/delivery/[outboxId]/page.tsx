@@ -40,7 +40,7 @@ export default async function EmailPage({ params }: { params: Promise<{ cohortId
         <div className="space-y-3">
           {pending && <Notice tone="info" title="Not sent yet">This is exactly what will be sent. Queued emails usually go out within a few seconds.</Notice>}
           {hidesLink && (
-            <Notice tone="info" title="Private link hidden">The button in the real email contains a single-use link for this person. It isn&apos;t shown here, for security.</Notice>
+            <Notice tone="info" title="Private link or code hidden">The real email contains a single-use link or code for this person. It isn&apos;t shown here, for security.</Notice>
           )}
           <div className="overflow-hidden rounded-md border border-line">
             <div className="border-b border-line bg-cream/60 px-3 py-2 text-sm">
