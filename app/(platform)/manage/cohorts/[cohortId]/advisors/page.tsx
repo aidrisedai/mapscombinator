@@ -10,7 +10,7 @@ import { load } from "@/lib/server/page";
 import { requirePageAccount } from "@/lib/server/session";
 import { revokeCohortRoleAction } from "../../../actions";
 import { InvitationList } from "../../../_components/InvitationList";
-import { AddExistingAdvisors, InviteAdvisors } from "./AdvisorForms";
+import { AddAdvisorForm, AddExistingAdvisors, InviteAdvisors } from "./AdvisorForms";
 
 export const metadata: Metadata = { title: "Advisors" };
 
@@ -74,8 +74,15 @@ export default async function AdvisorsPage({ params }: { params: Promise<{ cohor
         {writable ? (
           <div className="space-y-8">
             <Card>
-              <SectionTitle>Invite advisors</SectionTitle>
-              <InviteAdvisors cohortId={cohort.id} />
+              <SectionTitle>Add an advisor</SectionTitle>
+              <p className="mb-4 text-sm text-ink/70">New people get an invitation to set up their account. If they already have one, for example from an earlier cohort, they&apos;re added straight away.</p>
+              <AddAdvisorForm cohortId={cohort.id} cohortName={cohort.name} />
+              <details className="mt-6 rounded-md border border-line/70 px-4 py-3">
+                <summary className="cursor-pointer text-sm font-semibold text-ink/80">Add several at once (paste a list)</summary>
+                <div className="mt-4">
+                  <InviteAdvisors cohortId={cohort.id} />
+                </div>
+              </details>
             </Card>
             {others.length > 0 && (
               <Card>

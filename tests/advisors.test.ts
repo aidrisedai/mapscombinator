@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import { sql } from "@/lib/server/db";
 import { createStartup } from "@/lib/server/domain/startups";
 import { saveUpdate } from "@/lib/server/domain/updates";
-import { addAdvisors, addExistingAdvisors, listOtherAdvisors, parseAdvisorList, previewAdvisors, teamProgress } from "@/lib/server/domain/advisors";
+import { addAdvisors, addExistingAdvisors, addOneAdvisor, listOtherAdvisors, parseAdvisorList, previewAdvisors, previewOneAdvisor, teamProgress } from "@/lib/server/domain/advisors";
+import { consumeInvitation, hashToken, newToken } from "@/lib/server/domain/invitations";
+import { tx } from "@/lib/server/db";
 import { todayIn } from "@/lib/time";
 import { account, activeCohort, grant, org } from "./helpers";
 
@@ -75,5 +77,38 @@ describe("advisor onboarding", () => {
     const p = await teamProgress(w.vet, w.C2.id);
     expect(p?.byTeam.get(w.ea)).toMatchObject({ dailies: 1, weekly: false, total: 1 });
     expect(await teamProgress(w.fa, w.C2.id)).toBeNull();
+  });
+
+  it("the simple form invites one advisor and pre-fills their profile when they join", async () => {
+    const w = await world();
+    const bad = await previewOneAdvisor(w.admin2, w.C2.id, { name: "", email: "x", linkedinUrl: "https://evil.example/in/x" }).catch((e) => e);
+    expect(Object.keys(bad.fieldErrors ?? {})).toEqual(expect.arrayContaining(["name", "email", "linkedinUrl"]));
+    const person = await account(w.o, { name: "Nia New" });
+    // Not an account yet from the platform's point of view: use a fresh address instead.
+    const email = `nia-${w.C2.id.slice(0, 6)}@example.org`;
+    const input = { name: "Nia New", email, expertise: "Fundraising, Pricing", linkedinUrl: "linkedin.com/in/nia" };
+    expect((await previewOneAdvisor(w.admin2, w.C2.id, input)).action).toBe("invite");
+    expect(await addOneAdvisor(w.admin2, w.C2.id, input)).toMatchObject({ action: "invited" });
+    expect((await addOneAdvisor(w.admin2, w.C2.id, input)).action).toBe("pending");
+    const [inv] = await sql()`select id, profile_prefill from invitations where email = ${email}`;
+    expect(inv.profile_prefill).toEqual({ expertise: ["Fundraising", "Pricing"], linkedinUrl: "https://linkedin.com/in/nia" });
+    // Accepting copies the pre-fill into the new profile.
+    await sql()`update accounts set email = ${email} where id = ${person.id}`;
+    const token = newToken();
+    await sql()`update invitations set token_hash = ${hashToken(token)} where id = ${inv.id}`;
+    await tx((t) => consumeInvitation(t, token, { ...person, email }));
+    const [p] = await sql()`select expertise, linkedin_url from mentor_profiles where account_id = ${person.id}`;
+    expect(p).toMatchObject({ expertise: ["Fundraising", "Pricing"], linkedin_url: "https://linkedin.com/in/nia" });
+  });
+
+  it("the simple form adds an existing account directly and never overwrites what they wrote", async () => {
+    const w = await world();
+    await sql()`update mentor_profiles set expertise = ${["Hiring"]} where account_id = ${w.vet.id}`;
+    const r = await addOneAdvisor(w.admin2, w.C2.id, { name: "Vet", email: w.vet.email, expertise: "Sales", linkedinUrl: "https://www.linkedin.com/in/vet" });
+    expect(r).toMatchObject({ action: "added", name: "Veteran Advisor" });
+    const [p] = await sql()`select expertise, linkedin_url from mentor_profiles where account_id = ${w.vet.id}`;
+    expect(p).toMatchObject({ expertise: ["Hiring"], linkedin_url: "https://www.linkedin.com/in/vet" });
+    expect((await addOneAdvisor(w.admin2, w.C2.id, { name: "Vet", email: w.vet.email })).action).toBe("already");
+    await expect(addOneAdvisor(w.fa, w.C2.id, { name: "X", email: "x@example.org" })).rejects.toThrow();
   });
 });

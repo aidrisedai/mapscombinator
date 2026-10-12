@@ -410,15 +410,25 @@ try {
       const spring = owner.url().split("?")[0];
       await owner.goto(`${spring}/advisors`);
       await owner.getByText("Maya Mentor").first().waitFor();
-      await owner.getByLabel(/^Advisors to add/).fill(`New Advisor, advisor-${run}@example.org\nMaya, ${mentorEmail}`);
-      await owner.getByRole("button", { name: /^Preview$/ }).click();
+      // Simple form: a new advisor.
+      await owner.getByLabel(/^Full name/).fill("New Advisor");
+      await owner.getByLabel(/^Email/).first().fill(`advisor-${run}@example.org`);
+      await owner.getByLabel(/^Areas of expertise/).fill("Fundraising, Pricing");
+      await owner.getByLabel(/^LinkedIn/).fill("linkedin.com/in/new-advisor");
+      await owner.getByRole("button", { name: "Continue" }).click();
       await owner.getByText(/New: invitation to set up an account/).waitFor();
-      await owner.getByText(/Has an account: added directly/).waitFor();
       await shot(owner, "18-advisors-preview");
-      await owner.getByRole("button", { name: /Confirm: add 2 advisors/ }).click();
-      await owner.getByText(/1 invitation queued and 1 existing account added/).waitFor();
-      await waitForMail(mentorEmail, "added to");
+      await owner.getByRole("button", { name: "Send invitation" }).click();
+      await owner.getByText(/Invitation sent to New Advisor/).waitFor();
       await waitForMail(`advisor-${run}@example.org`, "invited");
+      // The same form recognises an existing account and adds it without a new sign-up.
+      await owner.getByLabel(/^Full name/).fill("Maya");
+      await owner.getByLabel(/^Email/).first().fill(mentorEmail);
+      await owner.getByRole("button", { name: "Continue" }).click();
+      await owner.getByText(/Has an account: added directly/).waitFor();
+      await owner.getByRole("button", { name: "Add to cohort now" }).click();
+      await owner.getByText(/already had an account, so they were added straight away/).waitFor();
+      await waitForMail(mentorEmail, "added to");
       await owner.getByText(/In this cohort \(1\)/).waitFor();
       await shot(owner, "19-advisors-added");
       // Same account, no new sign-up: the mentor's area now lists both cohorts.

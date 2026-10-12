@@ -73,7 +73,12 @@ Use placeholders such as `{first_name}`, `{startup_name}`, `{cohort_name}`, `{st
 
 ## Advisors tab (onboarding advisors)
 Cohort → **Advisors**:
-- **Invite advisors:** paste one per line (`Name, email`; spreadsheet rows work), press **Preview**, check the list, then **Confirm**. New people get an invitation to set up their account. People who already have an account, for example from an earlier cohort, are added straight away and get a short "you've been added" email. They never sign up twice. Running the same list again doesn't duplicate anything.
+- **Add an advisor (simple form):** enter their full name and email, plus optional areas of expertise and LinkedIn, then press **Continue**. You'll see what will happen:
+  - a new person gets the advisor invitation (they confirm their email with a code, then set a password);
+  - someone who already has an account, for example from an earlier cohort, is added straight away and emailed.
+
+  Press **Send invitation** or **Add to cohort now** to confirm. Expertise and LinkedIn pre-fill their profile; anything they've already written themselves is kept.
+- **Add several at once:** open "Add several at once (paste a list)" and paste one per line (`Name, email`), then **Preview** and **Confirm**.
 - **Add advisors from other cohorts:** tick advisors who already work with your other cohorts and press **Add selected**.
 - **The list** shows each advisor's profile status, whether they've published availability, and their upcoming appointments, with links to edit their profile or availability on their behalf, or remove them from this cohort.
 

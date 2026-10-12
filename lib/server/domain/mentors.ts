@@ -50,7 +50,7 @@ export async function getMentorContext(actor: Account, mentorId: string) {
 // ───────────────────────────── Profile ─────────────────────────────────────
 
 /** Accepts "linkedin.com/in/x" as well as full links; stored as https only. */
-const friendlyHttps = (label: string, host?: RegExp) =>
+export const friendlyHttps = (label: string, host?: RegExp) =>
   z
     .string()
     .optional()
@@ -64,13 +64,17 @@ const friendlyHttps = (label: string, host?: RegExp) =>
       return r.url;
     });
 
+export const LINKEDIN_HOST = /(^|\.)linkedin\.com$/i;
+export const linkedinSchema = friendlyHttps("LinkedIn", LINKEDIN_HOST);
+export const expertiseSchema = z.string().default("").transform((s) => [...new Set(s.split(",").map((x) => x.trim()).filter(Boolean))].slice(0, 12).map((x) => x.slice(0, 40)));
+
 const profileSchema = z.object({
   displayName: text(120, "Name").optional(),
   headline: text(160, "Headline").default(""),
   bio: text(1500, "Bio").default(""),
-  expertise: z.string().default("").transform((s) => [...new Set(s.split(",").map((x) => x.trim()).filter(Boolean))].slice(0, 12).map((x) => x.slice(0, 40))),
+  expertise: expertiseSchema,
   interests: text(1000, "Interests").default(""),
-  linkedinUrl: friendlyHttps("LinkedIn", /(^|\.)linkedin\.com$/i),
+  linkedinUrl: linkedinSchema,
   calendarUrl: friendlyHttps("calendar"),
   contactEmail: z
     .string()

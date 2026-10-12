@@ -269,7 +269,12 @@ export async function consumeInvitation(t: Tx, token: string, account: { id: str
       await t`insert into cohort_roles (cohort_id, account_id, role, granted_by)
               values (${inv.cohort_id}, ${account.id}, ${inv.role}, ${inv.invited_by})
               on conflict (cohort_id, account_id, role) where active do nothing`;
-      if (inv.role === "mentor") await t`insert into mentor_profiles (account_id) values (${account.id}) on conflict do nothing`;
+      if (inv.role === "mentor") {
+        await t`insert into mentor_profiles (account_id) values (${account.id}) on conflict do nothing`;
+        const pre = (inv.profile_prefill ?? {}) as { expertise?: string[]; linkedinUrl?: string | null };
+        if (pre.expertise?.length) await t`update mentor_profiles set expertise = ${pre.expertise} where account_id = ${account.id} and cardinality(expertise) = 0`;
+        if (pre.linkedinUrl) await t`update mentor_profiles set linkedin_url = ${pre.linkedinUrl} where account_id = ${account.id} and linkedin_url is null`;
+      }
   }
   await t`update invitations set state = 'accepted', accepted_at = now(), accepted_account_id = ${account.id} where id = ${inv.id}`;
   await queueWelcome(t, inv, account.id);

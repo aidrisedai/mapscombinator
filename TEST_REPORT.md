@@ -12,7 +12,7 @@ Date: 2026-10-02. Environment: cloud dev container, Node 22.22, Postgres 16.10 (
 |---|---|
 | `npm run lint` | ✅ 0 problems |
 | `npm run typecheck` | ✅ 0 errors |
-| `npm test` (Vitest + real Postgres) | ✅ 12 files, 52 tests passed (latest run) |
+| `npm test` (Vitest + real Postgres) | ✅ 12 files, 54 tests passed (latest run) |
 | `npm run build` | ✅ succeeded (all platform routes dynamic; marketing pages static) |
 | `npm run e2e` against `npm run dev` | ✅ 18/18 steps |
 | `npm run e2e` against the **production build** (`npm run start`) | ✅ 18/18 steps |
@@ -150,6 +150,11 @@ Fixed in this pass:
 - `npm test`: 12 files, 52 tests passed.
 - `npm run e2e` (dev server): 20/20 steps. The founder (including one wrong code), cofounder and mentor each confirm a code before setting a password, and the password form doesn't exist before then.
 - Test mode (`EMAIL_SANDBOX_ALLOWLIST`) no longer applies when `APP_ENV=production`. Delivery offers "Send them now" for emails it held back.
+
+## Simple "Add an advisor" form (2026-10-12)
+
+- One-person form (name, email, optional expertise and LinkedIn), with a preview of what will happen before anything is sent. The paste-a-list option is kept under "Add several at once". Migration `009` stores the profile pre-fill on the invitation, and it's copied on accept into empty fields only.
+- Tests: validation, invite then pending on repeat, pre-fill copied on accept, an existing account added directly without overwriting their own expertise, founders refused. `npm test`: 12 files, 54 tests passed. `npm run e2e`: 20/20 steps; the advisor step now uses the form for both a new and an existing person.
 
 ## Acceptance matrix
 

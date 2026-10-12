@@ -9,6 +9,9 @@ import { env } from "../env";
 import { invalid, notFound } from "../errors";
 import type { Account } from "../session";
 import { createInvitation } from "./invitations";
+import { expertiseSchema, linkedinSchema } from "./mentors";
+import { parse } from "./validate";
+import { email as emailSchema, requiredText } from "@/lib/validation";
 import { getOrganization } from "./organization";
 
 const MAX_ROWS = 100;
@@ -82,7 +85,9 @@ export async function previewAdvisors(actor: Account, cohortId: string, list: st
 }
 
 /** Give an existing account the advisor role here, without a new sign-up, and tell them by email. */
-async function addExisting(actor: Account, cohortId: string, accountId: string) {
+type Prefill = { expertise: string[]; linkedinUrl: string | null };
+
+async function addExisting(actor: Account, cohortId: string, accountId: string, prefill?: Prefill) {
   return tx(async (t) => {
     const a = await requireCohortAdmin(actor, cohortId, t);
     assertAdminWritable(a);
@@ -92,6 +97,9 @@ async function addExisting(actor: Account, cohortId: string, accountId: string) 
                         on conflict (cohort_id, account_id, role) where active do nothing returning id`;
     if (!ins[0]) return false;
     await t`insert into mentor_profiles (account_id) values (${acct.id}) on conflict do nothing`;
+    // Fill only what the advisor hasn't set themselves.
+    if (prefill?.expertise.length) await t`update mentor_profiles set expertise = ${prefill.expertise} where account_id = ${acct.id} and cardinality(expertise) = 0`;
+    if (prefill?.linkedinUrl) await t`update mentor_profiles set linkedin_url = ${prefill.linkedinUrl} where account_id = ${acct.id} and linkedin_url is null`;
     const org = (await getOrganization(t, actor.organizationId))!;
     const support = a.cohort.supportEmail ?? org.supportEmail;
     await enqueueEmail(t, {
@@ -183,4 +191,40 @@ export async function teamProgress(actor: Account, cohortId: string) {
       (select count(*)::int from team_updates u where u.enrollment_id = e.id and u.state = 'published' and u.hidden_at is null) as total
     from enrollments e where e.cohort_id = ${cohortId} and e.status = 'active'`;
   return { week, weekStart: w.startDate, weekEnd: w.endDate, byTeam: new Map(rows.map((r) => [r.enrollment_id as string, r as unknown as { dailies: number; weekly: boolean; total: number }])) };
+}
+
+// ───────────────────────────── One advisor (simple form) ───────────────────
+
+const oneSchema = z.object({
+  name: requiredText(120, "Name"),
+  email: emailSchema,
+  expertise: expertiseSchema,
+  linkedinUrl: linkedinSchema,
+});
+
+/** What adding this one person would do. Sends nothing. */
+export async function previewOneAdvisor(actor: Account, cohortId: string, input: Record<string, string>) {
+  const v = parse(oneSchema, input);
+  const a = await requireCohortAdmin(actor, cohortId);
+  assertAdminWritable(a);
+  const [plan] = await planRows(sql(), actor, cohortId, [{ line: 1, name: v.name, email: v.email }]);
+  return { ...plan, expertise: v.expertise, linkedinUrl: v.linkedinUrl };
+}
+
+/** Invite a new advisor, or add an existing account straight away. Expertise and LinkedIn pre-fill their profile. */
+export async function addOneAdvisor(actor: Account, cohortId: string, input: Record<string, string>) {
+  const v = parse(oneSchema, input);
+  const plan = await previewOneAdvisor(actor, cohortId, input);
+  const prefill: Prefill = { expertise: v.expertise, linkedinUrl: v.linkedinUrl };
+  if (plan.action === "skip") throw invalid(plan.error ?? "This person can't be added.");
+  if (plan.action === "already") return { action: "already" as const, name: plan.accountName ?? v.name };
+  if (plan.action === "pending") return { action: "pending" as const, name: v.name };
+  if (plan.action === "add_existing") {
+    const [acct] = await sql()`select id, display_name from accounts where email = ${v.email}`;
+    await addExisting(actor, cohortId, acct.id, prefill);
+    return { action: "added" as const, name: acct.display_name as string };
+  }
+  const id = await createInvitation(actor, { role: "mentor", email: v.email, name: v.name, cohortId });
+  await sql()`update invitations set profile_prefill = ${sql().json(prefill as never)} where id = ${id}`;
+  return { action: "invited" as const, name: v.name };
 }
