@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { AiAssistant } from "@/components/ai/AiAssistant";
 import { Badge, Card, Notice, PageHeader, SectionTitle } from "@/components/ui/primitives";
 import { aiConfigured } from "@/lib/server/ai/assistant";
@@ -90,7 +91,14 @@ export default async function EmailsPage({ params }: { params: Promise<{ cohortI
                   const states = m.states as Record<string, number>;
                   return (
                     <li key={m.id as string} className="space-y-1 py-3 first:pt-0">
-                      <p className="font-medium text-ink">{m.subject as string}</p>
+                      <p className="flex flex-wrap items-baseline justify-between gap-2">
+                        <span className="font-medium text-ink">{m.subject as string}</span>
+                        {m.sample_email_id ? (
+                          <Link href={`/manage/cohorts/${cohort.id}/delivery/${m.sample_email_id}`} className="text-xs font-medium text-emerald hover:text-forest">
+                            View email
+                          </Link>
+                        ) : null}
+                      </p>
                       <p className="text-xs text-ink/60">
                         {formatInstant(m.created_at as Date, cohort.timezone)} · {m.sender as string} · {audienceLabel(m.audience as string)}
                         {m.include_mentors ? " + mentors" : ""} · {m.recipient_count as number} recipient{m.recipient_count === 1 ? "" : "s"}

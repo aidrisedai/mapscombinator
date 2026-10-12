@@ -24,6 +24,10 @@ const STATE: Record<string, { label: string; tone: BadgeTone; meaning: string }>
 
 const EVENT: Record<string, string> = {
   invitation: "Invitation",
+  welcome: "Welcome",
+  message: "Message to startups",
+  cohort_added: "Added as advisor",
+  test: "Test (to you)",
   week_published: "Weekly guide published",
   announcement: "Announcement",
   session_published: "Office hours published",
@@ -95,7 +99,8 @@ export default async function DeliveryPage({ params, searchParams }: { params: P
                       {m.attempted_at ? <span className="block text-xs text-ink/50">last {formatInstant(m.attempted_at as Date, tz)}</span> : null}
                     </td>
                     <td className="max-w-xs break-words px-3 py-2.5 text-xs text-ink/70">{(m.last_error as string) || "—"}</td>
-                    <td className="px-3 py-2.5">
+                    <td className="space-y-1.5 whitespace-nowrap px-3 py-2.5">
+                      <Link href={`${base}/${m.id}`} className="block text-sm font-medium text-emerald hover:text-forest">View</Link>
                       {m.state === "failed" && (
                         <ActionButton action={retryEmailAction} fields={{ cohortId: cohort.id, outboxId: m.id as string }} label="Retry" pendingLabel="Queuing…" />
                       )}

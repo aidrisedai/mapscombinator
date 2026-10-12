@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { ActionButton } from "@/components/ui/forms";
 import { Badge, type BadgeTone } from "@/components/ui/primitives";
 import { invitationStatusLabel } from "@/lib/server/domain/invitations";
@@ -42,6 +43,11 @@ export function InvitationList({ rows, timezone, showRole = false, canManage = (
                 {` · Sent ${i.send_count as number} ${(i.send_count as number) === 1 ? "time" : "times"}`}
               </p>
               {open && i.last_error ? <p className="text-xs text-error">Last delivery note: {i.last_error as string}</p> : null}
+              {i.latest_email_id && i.cohort_id ? (
+                <Link href={`/manage/cohorts/${i.cohort_id}/delivery/${i.latest_email_id}`} className="text-xs font-medium text-emerald hover:text-forest">
+                  View email
+                </Link>
+              ) : null}
             </div>
             {open && canManage(i) && (
               <div className="flex shrink-0 flex-wrap gap-2">

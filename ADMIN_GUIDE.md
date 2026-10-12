@@ -49,6 +49,7 @@ Use placeholders such as `{first_name}`, `{startup_name}`, `{cohort_name}`, `{st
 - Each person gets their own personalised email; nobody sees the other addresses. Replies go to the cohort's support email.
 - A startup whose founders haven't set up accounts yet gets the email at its contact address, without a platform button.
 - Save messages you reuse as templates. **Sent emails** shows delivery counts; each startup's page lists the emails it was sent; **Delivery** has per-person detail and retries.
+- **View any email**, even while it's still queued: use **View** in Delivery, or **View email** in Sent emails, on a pending invitation, or on a startup's email history. You see exactly what the person gets. Private setup links are hidden for security.
 
 ## Advisors tab (onboarding advisors)
 Cohort → **Advisors**:

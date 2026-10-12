@@ -6,7 +6,7 @@ import { render } from "@/lib/server/email/templates";
 import { createStartup } from "@/lib/server/domain/startups";
 import { saveUpdate } from "@/lib/server/domain/updates";
 import { createInvitation, previewInvitation, resendInvitation } from "@/lib/server/domain/invitations";
-import { listMessages, previewMessage, saveAutoTemplate, sendMessage } from "@/lib/server/domain/emails";
+import { getCohortEmail, listMessages, previewMessage, saveAutoTemplate, sendMessage } from "@/lib/server/domain/emails";
 import { todayIn } from "@/lib/time";
 import { account, activeCohort, grant, org } from "./helpers";
 
@@ -115,5 +115,23 @@ describe("custom emails", () => {
     await saveUpdate(w.fa, w.C.id, { enrollmentId: w.ea, kind: "weekly", weekNumber: week, content: { accomplished: "a", learned: "l", nextCommitments: "n" }, lockVersion: null, intent: "publish" });
     const missing = await previewMessage(w.admin, w.C.id, { audience: "missing_weekly", subject: "s", body: "b" });
     expect(missing.recipients.map((r) => r.startup)).toEqual(["Bravo"]);
+  });
+
+  it("admins can view any queued email as it will be sent, without the private setup link", async () => {
+    const w = await world();
+    const email = `view-${randomUUID().slice(0, 6)}@example.org`;
+    const id = await createInvitation(w.admin, { role: "founder", email, name: "Vi Ew", cohortId: w.C.id, enrollmentId: w.eb });
+    const [m] = await outbox(sql()`related_id = ${id}`);
+    expect(m.state).toBe("queued");
+    const token = String(m.secret_payload.link).split("#")[1];
+    const v = await getCohortEmail(w.admin, w.C.id, m.id);
+    expect(v.rendered.subject).toBe("Congratulations! Bravo is accepted into Fall 2026");
+    expect(v.rendered.text).toMatch(/Hi Vi,/);
+    expect(v.rendered.html).not.toContain(token);
+    expect(v.rendered.text).not.toContain(token);
+    expect(v.hidesLink).toBe(true);
+    await expect(getCohortEmail(w.otherAdmin, w.C.id, m.id)).rejects.toThrow();
+    await expect(getCohortEmail(w.otherAdmin, w.C2.id, m.id)).rejects.toThrow(/couldn't find/);
+    await expect(getCohortEmail(w.fa, w.C.id, m.id)).rejects.toThrow();
   });
 });

@@ -12,7 +12,7 @@ Date: 2026-10-02. Environment: cloud dev container, Node 22.22, Postgres 16.10 (
 |---|---|
 | `npm run lint` | ✅ 0 problems |
 | `npm run typecheck` | ✅ 0 errors |
-| `npm test` (Vitest + real Postgres) | ✅ 10 files, 43 tests passed (latest run) |
+| `npm test` (Vitest + real Postgres) | ✅ 10 files, 44 tests passed (latest run) |
 | `npm run build` | ✅ succeeded (all platform routes dynamic; marketing pages static) |
 | `npm run e2e` against `npm run dev` | ✅ 18/18 steps |
 | `npm run e2e` against the **production build** (`npm run start`) | ✅ 18/18 steps |
@@ -110,6 +110,12 @@ Fixed in this pass:
 - `npm run e2e` (dev server): 20/20 steps. The founder now receives the acceptance email, and a new step covers the welcome email, editing and previewing the acceptance email, and sending a personalised message to all startups.
 - Crawl: 290 page loads, 0 problems.
 - **Fixed during testing:** browsers send line breaks in form text as `\r\n`, which stopped "- " lines from becoming bullet points. Line endings are now normalised.
+
+## Email viewer (2026-10-12)
+
+- Any email in a cohort's outbox can be opened and read as it is (or will be) sent, in any state, from Delivery, Sent emails, invitations and the startup email history.
+- Single-use setup links are replaced with a placeholder. A test checks that the real token never appears in the view, and that other cohorts' admins and founders can't open it.
+- `npm test`: 10 files, 44 tests passed. Browser check with the email worker off: a queued message and a queued invitation both display.
 
 ## Acceptance matrix
 

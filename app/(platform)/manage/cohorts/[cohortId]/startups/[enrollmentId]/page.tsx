@@ -157,6 +157,9 @@ export default async function StartupDetailPage({ params, searchParams }: { para
               <li key={m.id as string} className="py-2 text-sm first:pt-0">
                 <span className="font-medium">{m.subject as string}</span>
                 <span className="block text-xs text-ink/60">{formatInstant(m.created_at as Date, tz)} · {m.sender as string}</span>
+                {m.sample_email_id ? (
+                  <Link href={`${base}/delivery/${m.sample_email_id}`} className="text-xs font-medium text-emerald hover:text-forest">View email</Link>
+                ) : null}
               </li>
             ))}
           </ul>

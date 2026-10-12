@@ -347,7 +347,8 @@ export async function sendMessage(actor: Account, cohortId: string, input: Messa
 export async function listMessages(actor: Account, cohortId: string, opts: { enrollmentId?: string; limit?: number } = {}) {
   await requireCohortAdmin(actor, cohortId);
   return sql()`
-    select m.id, m.subject, m.audience, m.recipient_count, m.include_mentors, m.created_at, a.display_name as sender,
+    select m.id, m.subject, m.audience,
+      (select o.id from email_outbox o where o.related_type = 'message' and o.related_id = m.id order by o.created_at limit 1) as sample_email_id, m.recipient_count, m.include_mentors, m.created_at, a.display_name as sender,
       coalesce((select jsonb_object_agg(state, n) from (select o.state, count(*)::int as n from email_outbox o
                 where o.related_type = 'message' and o.related_id = m.id group by o.state) x), '{}'::jsonb) as states
     from cohort_messages m join accounts a on a.id = m.sent_by
@@ -356,3 +357,28 @@ export async function listMessages(actor: Account, cohortId: string, opts: { enr
 }
 
 export const audienceLabel = (a: string) => (a === "all" ? "All startups" : a === "selected" ? "Selected startups" : "Missing weekly summary");
+
+const SECRET_LINK_NOTE = "private link (only in the recipient's copy)";
+
+/**
+ * One email from the cohort's outbox, rendered exactly as it is (or will be)
+ * sent, in any state. Single-use links are never shown: they're replaced
+ * with a placeholder, so viewing can't leak someone's setup link.
+ */
+export async function getCohortEmail(actor: Account, cohortId: string, outboxId: string) {
+  if (!/^[0-9a-f-]{36}$/i.test(outboxId)) throw notFound("We couldn't find that email.");
+  await requireCohortAdmin(actor, cohortId);
+  const [m] = await sql()`
+    select o.id, o.event_type, o.template, o.recipient_email, o.state, o.attempts, o.attempted_at, o.last_error, o.created_at, o.updated_at,
+           o.payload, o.related_type, o.related_id, (o.secret_payload is not null) as has_secret, a.display_name as authorized_by_name
+    from email_outbox o left join accounts a on a.id = o.authorized_by
+    where o.id = ${outboxId} and o.cohort_id = ${cohortId}`;
+  if (!m) throw notFound("We couldn't find that email.");
+  const masked = { link: `${env().APP_URL}/accept-invitation#${encodeURIComponent(SECRET_LINK_NOTE)}` };
+  const r = render(m.template, m.payload, masked);
+  return {
+    email: m,
+    rendered: { subject: r.subject, html: r.html, text: r.text },
+    hidesLink: m.template === "invitation" || m.template === "password_reset" || m.template === "email_change",
+  };
+}
