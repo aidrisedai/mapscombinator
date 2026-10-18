@@ -271,7 +271,16 @@ export async function consumeInvitation(t: Tx, token: string, account: { id: str
               on conflict (cohort_id, account_id, role) where active do nothing`;
       if (inv.role === "mentor") {
         await t`insert into mentor_profiles (account_id) values (${account.id}) on conflict do nothing`;
-        const pre = (inv.profile_prefill ?? {}) as { expertise?: string[]; linkedinUrl?: string | null };
+        const pre = (inv.profile_prefill ?? {}) as { expertise?: string[]; linkedinUrl?: string | null; extraCohortIds?: string[] };
+        // Other cohorts the inviter chose; still checked against the inviter's current admin rights.
+        for (const extra of pre.extraCohortIds ?? []) {
+          await t`insert into cohort_roles (cohort_id, account_id, role, granted_by)
+                  select c.id, ${account.id}, 'mentor', ${inv.invited_by} from cohorts c
+                  where c.id = ${extra} and c.organization_id = ${inv.organization_id} and c.status <> 'archived'
+                    and exists (select 1 from accounts x where x.id = ${inv.invited_by} and (x.is_owner
+                         or exists (select 1 from cohort_roles ar where ar.account_id = x.id and ar.cohort_id = c.id and ar.role = 'admin' and ar.active)))
+                  on conflict (cohort_id, account_id, role) where active do nothing`;
+        }
         if (pre.expertise?.length) await t`update mentor_profiles set expertise = ${pre.expertise} where account_id = ${account.id} and cardinality(expertise) = 0`;
         if (pre.linkedinUrl) await t`update mentor_profiles set linkedin_url = ${pre.linkedinUrl} where account_id = ${account.id} and linkedin_url is null`;
       }

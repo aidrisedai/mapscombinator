@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Badge, Card, EmptyState, LinkButton, PageHeader } from "@/components/ui/primitives";
 import { listManagedCohorts } from "@/lib/server/domain/cohorts";
-import { countNewSubmissions } from "@/lib/server/domain/submissions";
 import { requirePageAccount } from "@/lib/server/session";
 import { formatDate, programWeeks } from "@/lib/time";
 import { StatusBadge } from "../_components/StatusBadge";
@@ -11,7 +10,7 @@ export const metadata: Metadata = { title: "Manage cohorts" };
 
 export default async function ManageCohortsPage() {
   const account = await requirePageAccount("/manage/cohorts");
-  const [cohorts, newSubmissions] = await Promise.all([listManagedCohorts(account), countNewSubmissions(account)]);
+  const cohorts = await listManagedCohorts(account);
   return (
     <>
       <PageHeader
@@ -20,12 +19,6 @@ export default async function ManageCohortsPage() {
         actions={
           account.isOwner && (
             <>
-              <LinkButton href="/manage/submissions" variant="secondary">
-                Website submissions{newSubmissions ? ` (${newSubmissions} new)` : ""}
-              </LinkButton>
-              <LinkButton href="/manage/platform" variant="secondary">
-                Platform settings
-              </LinkButton>
               <LinkButton href="/manage/cohorts/new">Create cohort</LinkButton>
             </>
           )

@@ -71,25 +71,29 @@ Use placeholders such as `{first_name}`, `{startup_name}`, `{cohort_name}`, `{st
 - Save messages you reuse as templates. **Sent emails** shows delivery counts; each startup's page lists the emails it was sent; **Delivery** has per-person detail and retries.
 - **View any email**, even while it's still queued: use **View** in Delivery, or **View email** in Sent emails, on a pending invitation, or on a startup's email history. You see exactly what the person gets. Private setup links are hidden for security.
 
-## Advisors tab (onboarding advisors)
-Cohort → **Advisors**:
-- **Add an advisor (simple form):** enter their full name and email, plus optional areas of expertise and LinkedIn, then press **Continue**. You'll see what will happen:
-  - a new person gets the advisor invitation (they confirm their email with a code, then set a password);
-  - someone who already has an account, for example from an earlier cohort, is added straight away and emailed.
-
-  Press **Send invitation** or **Add to cohort now** to confirm. Expertise and LinkedIn pre-fill their profile; anything they've already written themselves is kept.
-- **Add several at once:** open "Add several at once (paste a list)" and paste one per line (`Name, email`), then **Preview** and **Confirm**.
-- **Add advisors from other cohorts:** tick advisors who already work with your other cohorts and press **Add selected**.
-- **The list** shows each advisor's profile status, whether they've published availability, and their upcoming appointments, with links to edit their profile or availability on their behalf, or remove them from this cohort.
+## Advisors (Manage → Advisors)
+Advisors have their own section at the top of Manage, next to Cohorts, so they're no longer a tab inside each cohort. It lists every advisor across the cohorts you manage (owners see all cohorts). Use the chips at the top to filter by cohort.
+- **Each advisor shows:**
+  - their profile status and whether they have a booking link or times;
+  - the cohorts they advise; press × on a cohort to remove them from it;
+  - **Profile** and **Availability** buttons to edit those on their behalf;
+  - **Add to cohort** to give them another cohort straight away, with no new sign-up.
+- **Add an advisor:**
+  1. Enter their full name and email, plus optional expertise and LinkedIn.
+  2. Tick the cohorts they'll advise, then press **Continue** to see what will happen in each cohort.
+  3. Press **Send invitation**: a new person gets one invitation and joins every ticked cohort when they accept. If they already have an account, press **Add now** instead; they're added immediately and emailed.
+- **Add several at once:** choose a cohort and paste one per line (`Name, email`).
+- **Pending advisor invitations** for all your cohorts are listed at the bottom, with Resend, Revoke and View email.
 
 What advisors see:
-- **Mentor → Startups** is the advisor home page. For the chosen week, it shows:
+- **Mentor → Startups** is the advisor home page. It starts with a **Teams & progress** table: each startup's daily updates this week, whether the weekly summary is posted, summaries so far and the last update. Below that, for the chosen week, it shows:
   - every startup's published **daily update** for each day (pick the day; today by default);
   - every startup's **weekly summary**;
   - **This week's materials**: the guide's title, objective and deliverable, plus the slides, files and links to review.
 
   Teams that haven't posted are listed as "No update for this day". Advisors in several cohorts switch between them at the top, and can step back or forward a week.
 - **Booking:** advisors can add their own **booking link** (Calendly, Cal.com, Google or Outlook booking page) under Availability → Option 1. Founders then see **Book on their calendar** on the Mentors tab and on the advisor's page. Publishing times on the platform (Option 2) is optional, and both can be used together.
+- **The cohort home page** also shows advisors the Teams & progress table. Everyone in the cohort, founders included, sees an **Advisors** card there, and the cohort's **Advisors** tab (previously "Mentors") lists every advisor with their profile, links and booking options.
 - Advisors also see the Startups page with this week's progress counts, each team's published timeline, the journal, the weekly guide, office hours and announcements. Drafts are never shown, and founders don't see the cross-team counts.
 
 ## Mentors

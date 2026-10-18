@@ -24,7 +24,7 @@ export default async function MentorPage({ params }: { params: Promise<{ cohortI
   return (
     <>
       <p className="mb-2 text-sm">
-        <Link href={backHref} className="font-medium text-emerald hover:text-forest">← All mentors</Link>
+        <Link href={backHref} className="font-medium text-emerald hover:text-forest">← All advisors</Link>
       </p>
       <PageHeader eyebrow="Mentor / advisor" title={mentor.display_name} description={mentor.headline || undefined} />
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">

@@ -10,7 +10,7 @@ export function CohortTabs({ base }: { base: string }) {
     { key: "journal", href: `${base}/journal`, label: "Journal" },
     { key: "startups", href: `${base}/startups`, label: "Startups" },
     { key: "weeks", href: `${base}/weeks`, label: "Weekly guide" },
-    { key: "mentors", href: `${base}/mentors`, label: "Mentors" },
+    { key: "mentors", href: `${base}/mentors`, label: "Advisors" },
     { key: "office-hours", href: `${base}/office-hours`, label: "Office hours" },
     { key: "announcements", href: `${base}/announcements`, label: "Announcements" },
   ];

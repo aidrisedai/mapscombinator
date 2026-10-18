@@ -12,7 +12,7 @@ Date: 2026-10-02. Environment: cloud dev container, Node 22.22, Postgres 16.10 (
 |---|---|
 | `npm run lint` | ✅ 0 problems |
 | `npm run typecheck` | ✅ 0 errors |
-| `npm test` (Vitest + real Postgres) | ✅ 12 files, 56 tests passed (latest run) |
+| `npm test` (Vitest + real Postgres) | ✅ 12 files, 58 tests passed (latest run) |
 | `npm run build` | ✅ succeeded (all platform routes dynamic; marketing pages static) |
 | `npm run e2e` against `npm run dev` | ✅ 18/18 steps |
 | `npm run e2e` against the **production build** (`npm run start`) | ✅ 18/18 steps |
@@ -168,6 +168,22 @@ Fixed in this pass:
 - `npm test`: 12 files, 56 tests passed.
 - `npm run e2e`: 20/20. The advisor step now opens the dashboard (sees the founder's update, the Week 2 guide and the slides) and saves a booking link, and the founder sees it.
 - Crawl as mentor and founder, 1280 px and 390 px: 164 page loads, 0 problems.
+
+## Advisors as a top-level section (2026-10-18)
+
+- **Manage → Advisors** (top-level nav: Cohorts · Advisors · Website submissions · Platform settings) replaces the per-cohort tab, and old cohort links redirect there filtered to that cohort. You can add one advisor to several cohorts; a new person gets one invitation and joins every chosen cohort on accept, re-checked against the inviter's admin rights at that moment.
+- Cohort members see an Advisors card on the cohort home page and an **Advisors** tab. Advisors see a Teams & progress table on their dashboard and on the cohort home page.
+- Tests:
+  - multi-cohort invite (one invitation, roles in both cohorts after accepting) and adding an existing account to several cohorts;
+  - scoping: an admin only sees and adds to cohorts they manage, and founders are refused;
+  - founders see the advisors preview, and advisors get progress rows.
+- `npm test`: 12 files, 58 tests passed.
+- `npm run e2e`: 20/20. The advisor step covers:
+  - the old link redirecting, with the filtered cohort pre-ticked;
+  - inviting a new advisor and adding an existing one;
+  - founders seeing the advisor on the home page and the Advisors tab;
+  - the advisor seeing Teams & progress on the cohort home.
+- Crawl as owner, founder and mentor, at 1280 px and 390 px: 316 page loads, 0 problems.
 
 ## Acceptance matrix
 

@@ -181,19 +181,149 @@ export async function listCohortAdvisors(actor: Account, cohortId: string) {
  * Published-only progress per team for this week, for advisors, viewers and
  * admins. Drafts never count. Founders don't get the cross-team view.
  */
+export type TeamProgressRow = {
+  id: string;
+  name: string;
+  dailies: number;
+  weekly: boolean;
+  total: number;
+  weekliesPosted: number;
+  lastPublished: Date | null;
+};
+
 export async function teamProgress(actor: Account, cohortId: string) {
   const a = await requireCohortRead(actor, cohortId);
   if (!(a.isAdmin || a.isMentor || a.isViewer)) return null;
   const today = todayIn(a.cohort.timezone);
   const week = weekNumberFor(a.cohort.startDate, a.cohort.weekCount, today) ?? (today < a.cohort.startDate ? 1 : a.cohort.weekCount);
   const w = programWeeks(a.cohort.startDate, a.cohort.weekCount)[week - 1];
+  const pub = sql()`u.enrollment_id = e.id and u.state = 'published' and u.hidden_at is null`;
   const rows = await sql()`
-    select e.id as enrollment_id,
-      (select count(*)::int from team_updates u where u.enrollment_id = e.id and u.kind = 'daily' and u.week_number = ${week} and u.state = 'published' and u.hidden_at is null) as dailies,
-      exists (select 1 from team_updates u where u.enrollment_id = e.id and u.kind = 'weekly' and u.week_number = ${week} and u.state = 'published' and u.hidden_at is null) as weekly,
-      (select count(*)::int from team_updates u where u.enrollment_id = e.id and u.state = 'published' and u.hidden_at is null) as total
-    from enrollments e where e.cohort_id = ${cohortId} and e.status = 'active'`;
-  return { week, weekStart: w.startDate, weekEnd: w.endDate, byTeam: new Map(rows.map((r) => [r.enrollment_id as string, r as unknown as { dailies: number; weekly: boolean; total: number }])) };
+    select e.id, s.name,
+      (select count(*)::int from team_updates u where ${pub} and u.kind = 'daily' and u.week_number = ${week}) as dailies,
+      exists (select 1 from team_updates u where ${pub} and u.kind = 'weekly' and u.week_number = ${week}) as weekly,
+      (select count(*)::int from team_updates u where ${pub} and u.kind = 'weekly' and u.week_number <= ${week}) as weeklies_posted,
+      (select count(*)::int from team_updates u where ${pub}) as total,
+      (select max(u.last_published_at) from team_updates u where ${pub}) as last_published
+    from enrollments e join startups s on s.id = e.startup_id
+    where e.cohort_id = ${cohortId} and e.status = 'active' order by s.name`;
+  const teams: TeamProgressRow[] = rows.map((r) => ({
+    id: r.id as string,
+    name: r.name as string,
+    dailies: r.dailies as number,
+    weekly: r.weekly as boolean,
+    total: r.total as number,
+    weekliesPosted: r.weeklies_posted as number,
+    lastPublished: (r.last_published as Date | null) ?? null,
+  }));
+  return { week, weekStart: w.startDate, weekEnd: w.endDate, timezone: a.cohort.timezone, teams, byTeam: new Map(teams.map((t) => [t.id, t])) };
+}
+
+/** A few advisors for a cohort's home page; everyone in the cohort can see them. */
+export async function cohortAdvisorsPreview(actor: Account, cohortId: string, limit = 5) {
+  await requireCohortRead(actor, cohortId);
+  const rows = await sql()`
+    select a.id, a.display_name, p.headline, count(*) over ()::int as total
+    from cohort_roles r join accounts a on a.id = r.account_id and a.state = 'active'
+    left join mentor_profiles p on p.account_id = a.id
+    where r.cohort_id = ${cohortId} and r.role = 'mentor' and r.active order by a.display_name limit ${limit}`;
+  return { advisors: rows.map((r) => ({ id: r.id as string, name: r.display_name as string, headline: (r.headline as string | null) || null })), total: (rows[0]?.total as number) ?? 0 };
+}
+
+// ───────────────────────────── Organization-wide advisors ──────────────────
+
+/** Cohorts this person administers (owners: every cohort in the organization). */
+export async function adminCohorts(actor: Account) {
+  return actor.isOwner
+    ? sql()`select id, name, status from cohorts where organization_id = ${actor.organizationId} order by start_date desc, name`
+    : sql()`select c.id, c.name, c.status from cohorts c join cohort_roles r on r.cohort_id = c.id and r.role = 'admin' and r.active
+            where r.account_id = ${actor.id} order by c.start_date desc, c.name`;
+}
+
+/** Every advisor in the cohorts this person manages, with the cohorts each one advises. */
+export async function listAllAdvisors(actor: Account, cohortFilter?: string | null) {
+  const cohorts = await adminCohorts(actor);
+  if (!cohorts.length) throw forbidden("Only cohort administrators can manage advisors.");
+  const ids = cohorts.map((c) => c.id as string);
+  const filter = cohortFilter && ids.includes(cohortFilter) ? cohortFilter : null;
+  const rows = await sql()`
+    select a.id, a.display_name, a.email, a.state, p.headline, p.bio, p.expertise, p.linkedin_url, p.calendar_url,
+      (select count(*)::int from mentor_availability_rules ar where ar.mentor_account_id = a.id and ar.state = 'active') as rules,
+      jsonb_agg(jsonb_build_object('cohortId', c.id, 'cohortName', c.name, 'roleId', r.id, 'status', c.status) order by c.start_date desc) as cohorts
+    from cohort_roles r join accounts a on a.id = r.account_id join cohorts c on c.id = r.cohort_id
+    left join mentor_profiles p on p.account_id = a.id
+    where r.role = 'mentor' and r.active and r.cohort_id = any(${ids})
+      and (${filter}::uuid is null or exists (select 1 from cohort_roles f where f.account_id = a.id and f.cohort_id = ${filter} and f.role = 'mentor' and f.active))
+    group by a.id, a.display_name, a.email, a.state, p.headline, p.bio, p.expertise, p.linkedin_url, p.calendar_url
+    order by a.display_name`;
+  const pending = await sql()`
+    select i.id, i.email, i.invitee_name, i.role, i.state, i.delivery_state, i.created_at, i.expires_at, i.last_sent_at, i.send_count,
+           i.accepted_at, i.enrollment_id, i.cohort_id, c.name as cohort_name,
+           (select count(*)::int from invitation_help_requests h where h.invitation_id = i.id and h.handled_at is null) as help_requests,
+           (select o.last_error from email_outbox o where o.related_type = 'invitation' and o.related_id = i.id order by o.created_at desc limit 1) as last_error,
+           (select o.id from email_outbox o where o.related_type = 'invitation' and o.related_id = i.id and o.template = 'invitation' order by o.created_at desc limit 1) as latest_email_id
+    from invitations i join cohorts c on c.id = i.cohort_id
+    where i.role = 'mentor' and i.cohort_id = any(${ids}) and (${filter}::uuid is null or i.cohort_id = ${filter})
+      and i.state not in ('accepted', 'revoked')
+    order by i.created_at desc`;
+  return { cohorts, filter, advisors: rows, pending };
+}
+
+const multiSchema = z.object({
+  name: requiredText(120, "Name"),
+  email: emailSchema,
+  expertise: expertiseSchema,
+  linkedinUrl: linkedinSchema,
+  cohortIds: z.array(z.string().uuid()).min(1, "Choose at least one cohort."),
+});
+
+async function writableAdminCohorts(actor: Account, cohortIds: string[]) {
+  const mine = await adminCohorts(actor);
+  const ok = new Map(mine.filter((c) => c.status !== "archived").map((c) => [c.id as string, c.name as string]));
+  for (const id of cohortIds) if (!ok.has(id)) throw forbidden("You can only add advisors to cohorts you manage (and that aren't archived).");
+  return cohortIds.map((id) => ({ id, name: ok.get(id)! }));
+}
+
+/** What adding this person to these cohorts would do. Sends nothing. */
+export async function previewAdvisorForCohorts(actor: Account, input: { name: string; email: string; expertise?: string; linkedinUrl?: string; cohortIds: string[] }) {
+  const v = parse(multiSchema, input);
+  const cohorts = await writableAdminCohorts(actor, v.cohortIds);
+  const per = [];
+  for (const c of cohorts) {
+    const [plan] = await planRows(sql(), actor, c.id, [{ line: 1, name: v.name, email: v.email }]);
+    per.push({ cohortId: c.id, cohortName: c.name, action: plan.action, error: plan.error, accountName: plan.accountName });
+  }
+  return { name: v.name, email: v.email, expertise: v.expertise, linkedinUrl: v.linkedinUrl, cohorts: per };
+}
+
+/**
+ * Add one advisor to one or more cohorts. Existing accounts are added
+ * directly; a new person gets a single invitation (for the first cohort) and
+ * joins the other chosen cohorts when they accept.
+ */
+export async function addAdvisorToCohorts(actor: Account, input: { name: string; email: string; expertise?: string; linkedinUrl?: string; cohortIds: string[] }) {
+  const p = await previewAdvisorForCohorts(actor, input);
+  const prefill: Prefill = { expertise: p.expertise, linkedinUrl: p.linkedinUrl };
+  const result = { invited: [] as string[], added: [] as string[], already: [] as string[], pending: [] as string[], willJoin: [] as string[] };
+  const skip = p.cohorts.find((c) => c.action === "skip");
+  if (skip) throw invalid(skip.error ?? "This person can't be added.");
+  const [acct] = await sql()`select id from accounts where email = ${p.email}`;
+  if (acct) {
+    for (const c of p.cohorts) {
+      if (c.action === "already") result.already.push(c.cohortName);
+      else if (await addExisting(actor, c.cohortId, acct.id, prefill)) result.added.push(c.cohortName);
+    }
+    return result;
+  }
+  const todo = p.cohorts.filter((c) => c.action === "invite");
+  for (const c of p.cohorts) if (c.action === "pending") result.pending.push(c.cohortName);
+  if (!todo.length) return result;
+  const [first, ...rest] = todo;
+  const id = await createInvitation(actor, { role: "mentor", email: p.email, name: p.name, cohortId: first.cohortId });
+  await sql()`update invitations set profile_prefill = ${sql().json({ ...prefill, extraCohortIds: rest.map((c) => c.cohortId) } as never)} where id = ${id}`;
+  result.invited.push(first.cohortName);
+  result.willJoin.push(...rest.map((c) => c.cohortName));
+  return result;
 }
 
 // ───────────────────────────── One advisor (simple form) ───────────────────
@@ -254,13 +384,16 @@ export async function advisorDigest(actor: Account, cohortId: string, q: { week?
     sql()`select e.id, s.name from enrollments e join startups s on s.id = e.startup_id where e.cohort_id = ${cohortId} and e.status = 'active' order by s.name`,
     publishedUpdatesFor(cohortId, { kind: "daily", reportDate: date }),
     publishedUpdatesFor(cohortId, { kind: "weekly", week }),
-    sql()`select enrollment_id, count(*)::int as n from team_updates where cohort_id = ${cohortId} and kind = 'daily' and week_number = ${week}
-          and state = 'published' and hidden_at is null group by enrollment_id`,
+    sql()`select enrollment_id,
+            count(*) filter (where kind = 'daily' and week_number = ${week})::int as n,
+            count(*) filter (where kind = 'weekly' and week_number <= ${week})::int as weeklies,
+            max(last_published_at) as last_published
+          from team_updates where cohort_id = ${cohortId} and state = 'published' and hidden_at is null group by enrollment_id`,
     getWeekForReader(actor, cohortId, week),
   ]);
   const dailyBy = new Map(dailies.map((u) => [u.enrollmentId, u]));
   const weeklyBy = new Map(weeklies.map((u) => [u.enrollmentId, u]));
-  const countBy = new Map(counts.map((c) => [c.enrollment_id as string, c.n as number]));
+  const countBy = new Map(counts.map((c) => [c.enrollment_id as string, c]));
   return {
     access: a,
     week,
@@ -276,7 +409,9 @@ export async function advisorDigest(actor: Account, cohortId: string, q: { week?
       name: s.name as string,
       daily: dailyBy.get(s.id as string) ?? null,
       weekly: weeklyBy.get(s.id as string) ?? null,
-      dailiesThisWeek: countBy.get(s.id as string) ?? 0,
+      dailiesThisWeek: (countBy.get(s.id as string)?.n as number) ?? 0,
+      weekliesPosted: (countBy.get(s.id as string)?.weeklies as number) ?? 0,
+      lastPublished: (countBy.get(s.id as string)?.last_published as Date | null) ?? null,
     })),
   };
 }

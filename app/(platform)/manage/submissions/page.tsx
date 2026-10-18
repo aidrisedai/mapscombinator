@@ -27,9 +27,6 @@ export default async function SubmissionsPage({ searchParams }: { searchParams: 
   const open = (data.counts.new ?? 0) + (data.counts.contacted ?? 0) + (data.counts.done ?? 0);
   return (
     <div className="space-y-6">
-      <p className="text-sm">
-        <Link href="/manage/cohorts" className="font-medium text-emerald hover:text-forest">← Cohorts</Link>
-      </p>
       <PageHeader title="Website submissions" description="Everything people send through the public website: Get Involved offers (mentors, pilot partners, volunteers, sponsors) and Combinator interest. Each one is also emailed to the program inbox." />
       <nav aria-label="Filter" className="flex flex-wrap gap-2">
         <Chip href={href({ status: null })} active={!data.status} label={`Open (${open})`} />

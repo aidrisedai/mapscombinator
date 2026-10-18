@@ -9,6 +9,8 @@ import { teamBookings } from "@/lib/server/domain/bookings";
 import { listSessions } from "@/lib/server/domain/office-hours";
 import { getUpdateForPeriod, listJournal } from "@/lib/server/domain/updates";
 import { getWeekForReader } from "@/lib/server/domain/weeks";
+import { cohortAdvisorsPreview, teamProgress } from "@/lib/server/domain/advisors";
+import { TeamProgressTable } from "@/components/mentors/TeamProgressTable";
 import { load, one } from "@/lib/server/page";
 import { requirePageAccount } from "@/lib/server/session";
 import { addDays, formatDate, formatTimeRange, todayIn, weekNumberFor } from "@/lib/time";
@@ -26,10 +28,12 @@ export default async function CohortHome({ params, searchParams }: { params: Pro
   const team = a.founderOf.find((f) => f.enrollmentId === one(sp.team)) ?? a.founderOf[0] ?? null;
   const base = `/app/cohorts/${cohortId}`;
 
-  const [week, sessions, announcements] = await Promise.all([
+  const [week, sessions, announcements, advisors, progress] = await Promise.all([
     weekNo ? getWeekForReader(account, cohortId, weekNo) : null,
     listSessions(account, cohortId, { when: "upcoming", limit: 3 }),
     listAnnouncements(account, cohortId, { limit: 3 }),
+    cohortAdvisorsPreview(account, cohortId),
+    team ? null : teamProgress(account, cohortId),
   ]);
   const writable = c.status === "active" && weekNo !== null;
   const todayDaily = team && writable ? await getUpdateForPeriod(account, cohortId, team.enrollmentId, "daily", { reportDate: today }) : null;
@@ -122,6 +126,15 @@ export default async function CohortHome({ params, searchParams }: { params: Pro
               <Link className="font-medium text-emerald hover:text-forest" href={`${base}/journal`}>See what other startups are doing →</Link>
             </div>
           ) : (
+            <>
+            {progress && (
+              <section>
+                <SectionTitle action={a.isMentor ? <Link href={`/mentor/startups?cohort=${cohortId}`} className="text-sm font-medium text-emerald hover:text-forest">Daily &amp; weekly updates →</Link> : undefined}>
+                  Teams &amp; progress
+                </SectionTitle>
+                <TeamProgressTable rows={progress.teams} cohortId={cohortId} week={progress.week} tz={c.timezone} />
+              </section>
+            )}
             <section>
               <SectionTitle action={<Link href={`${base}/journal`} className="text-sm font-medium text-emerald hover:text-forest">Full journal →</Link>}>Recent updates</SectionTitle>
               {recent.length === 0 ? (
@@ -130,10 +143,26 @@ export default async function CohortHome({ params, searchParams }: { params: Pro
                 <div className="space-y-4">{recent.map((u) => <UpdateCard key={u.id} u={u} cohortId={cohortId} tz={c.timezone} compact />)}</div>
               )}
             </section>
+            </>
           )}
         </div>
 
         <aside className="space-y-6">
+          <Card>
+            <SectionTitle action={advisors.total ? <Link href={`${base}/mentors`} className="text-sm font-medium text-emerald hover:text-forest">All {advisors.total} →</Link> : undefined}>Advisors</SectionTitle>
+            {advisors.total === 0 ? (
+              <p className="text-sm text-ink/60">The program team hasn&apos;t added advisors to this cohort yet.</p>
+            ) : (
+              <ul className="space-y-2.5 text-sm">
+                {advisors.advisors.map((m) => (
+                  <li key={m.id}>
+                    <Link href={`${base}/mentors/${m.id}`} className="font-medium text-forest hover:text-emerald">{m.name}</Link>
+                    {m.headline && <span className="block text-xs text-ink/60">{m.headline}</span>}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
           <Card>
             <SectionTitle action={<Link href={`${base}/office-hours`} className="text-sm font-medium text-emerald hover:text-forest">All →</Link>}>Upcoming office hours</SectionTitle>
             {sessions.sessions.length === 0 ? (

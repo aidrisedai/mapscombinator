@@ -5,7 +5,7 @@ import { saveUpdate } from "@/lib/server/domain/updates";
 import { publishWeek, saveWeekDraft, addLinkResource } from "@/lib/server/domain/weeks";
 import { updateMentorCalendar } from "@/lib/server/domain/mentors";
 import { getCohortMentor } from "@/lib/server/domain/bookings";
-import { addAdvisors, addExistingAdvisors, addOneAdvisor, advisorDigest, listOtherAdvisors, parseAdvisorList, previewAdvisors, previewOneAdvisor, teamProgress } from "@/lib/server/domain/advisors";
+import { addAdvisorToCohorts, addAdvisors, addExistingAdvisors, addOneAdvisor, advisorDigest, cohortAdvisorsPreview, listAllAdvisors, listOtherAdvisors, parseAdvisorList, previewAdvisors, previewOneAdvisor, teamProgress } from "@/lib/server/domain/advisors";
 import { consumeInvitation, hashToken, newToken } from "@/lib/server/domain/invitations";
 import { tx } from "@/lib/server/db";
 import { todayIn } from "@/lib/time";
@@ -153,5 +153,39 @@ describe("advisor onboarding", () => {
     await updateMentorCalendar(w.admin2, w.vet.id, { calendarUrl: "" }); // admin on behalf
     expect((await getCohortMentor(w.fa, w.C2.id, w.vet.id)).mentor.calendar_url).toBeNull();
     await expect(updateMentorCalendar(w.fa, w.vet.id, { calendarUrl: "https://cal.com/x" })).rejects.toThrow();
+  });
+
+  it("one advisor across several cohorts: a single invitation, joins all chosen cohorts on accept", async () => {
+    const w = await world();
+    const email = `multi-${w.C1.id.slice(0, 6)}@example.org`;
+    const r = await addAdvisorToCohorts(w.owner, { name: "Multi Advisor", email, expertise: "Sales", cohortIds: [w.C1.id, w.C2.id] });
+    expect(r).toMatchObject({ invited: ["Fall"], willJoin: ["Spring"] });
+    const invs = await sql()`select id from invitations where email = ${email}`;
+    expect(invs).toHaveLength(1);
+    const person = await account(w.o, { name: "Multi Advisor" });
+    await sql()`update accounts set email = ${email} where id = ${person.id}`;
+    const token = newToken();
+    await sql()`update invitations set token_hash = ${hashToken(token)} where id = ${invs[0].id}`;
+    await tx((t) => consumeInvitation(t, token, { ...person, email }));
+    const roles = await sql()`select cohort_id from cohort_roles where account_id = ${person.id} and role = 'mentor' and active order by cohort_id`;
+    expect(roles.map((x) => x.cohort_id).sort()).toEqual([w.C1.id, w.C2.id].sort());
+    // Existing accounts are added to every chosen cohort at once.
+    const again = await addAdvisorToCohorts(w.owner, { name: "Vet", email: w.vet.email, cohortIds: [w.C1.id, w.C2.id] });
+    expect(again).toMatchObject({ already: ["Fall"], added: ["Spring"] });
+  });
+
+  it("the Advisors section is scoped to the cohorts you manage; cohort members see their advisors", async () => {
+    const w = await world();
+    const all = await listAllAdvisors(w.owner);
+    expect(all.advisors.map((a) => a.id)).toContain(w.vet.id);
+    // admin2 manages only Spring, where vet isn't an advisor yet.
+    expect((await listAllAdvisors(w.admin2)).advisors.map((a) => a.id)).not.toContain(w.vet.id);
+    await expect(addAdvisorToCohorts(w.admin2, { name: "X", email: "x2@example.org", cohortIds: [w.C1.id] })).rejects.toThrow(/cohorts you manage/);
+    await expect(listAllAdvisors(w.fa)).rejects.toThrow(/administrators/);
+    await addExistingAdvisors(w.admin2, w.C2.id, [w.vet.id]);
+    const preview = await cohortAdvisorsPreview(w.fa, w.C2.id);
+    expect(preview.advisors.map((a) => a.name)).toEqual(["Veteran Advisor"]);
+    const progress = await teamProgress(w.vet, w.C2.id);
+    expect(progress?.teams.map((t) => t.name)).toEqual(["Alpha"]);
   });
 });

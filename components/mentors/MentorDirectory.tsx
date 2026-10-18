@@ -13,7 +13,7 @@ export async function MentorDirectory({ account, cohortId }: { account: Account;
   return (
     <section aria-labelledby="mentors-h">
       <SectionTitle>
-        <span id="mentors-h">Mentors and advisors in {access.cohort.name}</span>
+        <span id="mentors-h">Advisors in {access.cohort.name}</span>
       </SectionTitle>
       <p className="mb-4 text-sm text-ink/70">
         {canBook
@@ -31,7 +31,7 @@ export async function MentorDirectory({ account, cohortId }: { account: Account;
       {mentors.length === 0 ? (
         <EmptyState title="No mentors yet">
           {access.isAdmin
-            ? "Invite mentors from the cohort's Members page. Once they add availability, founders can book them here."
+            ? "Add advisors under Manage → Advisors. Once they add a booking link or times, founders can book them here."
             : "When the program adds mentors to this cohort, they'll appear here with their open times."}
         </EmptyState>
       ) : (

@@ -397,11 +397,12 @@ try {
       await shot(founder, "16-rescheduled");
     });
 
-    await step("advisors: dashboard with updates and materials, own booking link, team progress; second cohort adds them without a new sign-up and invites a new advisor", async () => {
+    await step("advisors: dashboard with progress, updates and materials; own booking link; Manage → Advisors adds across cohorts; founders see advisors", async () => {
       // Advisor dashboard: today's updates, weekly summaries and this week's materials.
       await mentorPage.goto(`${BASE}/mentor`);
       await mentorPage.waitForURL(/\/mentor\/startups/);
-      await mentorPage.getByText(/^Daily updates ·/).waitFor();
+      await mentorPage.getByText("Teams & progress").waitFor();
+      await mentorPage.locator("#daily-h").waitFor();
       await mentorPage.getByText(`Acme ${run}`).first().waitFor();
       await mentorPage.getByText("This week's materials").waitFor();
       await mentorPage.getByText("Customer discovery").first().waitFor();
@@ -426,15 +427,18 @@ try {
       await owner.getByRole("button", { name: /Save as draft/ }).click();
       await owner.waitForURL(/\/manage\/cohorts\/[0-9a-f-]{36}(\?|$)/);
       const spring = owner.url().split("?")[0];
+      // The old cohort-level address now opens the top-level Advisors section, filtered to that cohort.
       await owner.goto(`${spring}/advisors`);
-      await owner.getByText("Maya Mentor").first().waitFor();
-      // Simple form: a new advisor.
+      await owner.waitForURL(/\/manage\/advisors\?cohort=/);
+      await owner.getByRole("link", { name: "Advisors", exact: true }).first().waitFor();
+      // Simple form: a new advisor, Spring pre-ticked from the filter.
       await owner.getByLabel(/^Full name/).fill("New Advisor");
       await owner.getByLabel(/^Email/).first().fill(`advisor-${run}@example.org`);
       await owner.getByLabel(/^Areas of expertise/).fill("Fundraising, Pricing");
       await owner.getByLabel(/^LinkedIn/).fill("linkedin.com/in/new-advisor");
+      if (!(await owner.getByRole("checkbox", { name: new RegExp(`E2E Spring ${run}`) }).isChecked())) throw new Error("filtered cohort not pre-selected");
       await owner.getByRole("button", { name: "Continue" }).click();
-      await owner.getByText(/New: invitation to set up an account/).waitFor();
+      await owner.getByText(/New: gets an invitation/).waitFor();
       await shot(owner, "18-advisors-preview");
       await owner.getByRole("button", { name: "Send invitation" }).click();
       await owner.getByText(/Invitation sent to New Advisor/).waitFor();
@@ -443,12 +447,23 @@ try {
       await owner.getByLabel(/^Full name/).fill("Maya");
       await owner.getByLabel(/^Email/).first().fill(mentorEmail);
       await owner.getByRole("button", { name: "Continue" }).click();
-      await owner.getByText(/Has an account: added directly/).waitFor();
-      await owner.getByRole("button", { name: "Add to cohort now" }).click();
-      await owner.getByText(/already had an account, so they were added straight away/).waitFor();
+      await owner.getByText(/Has an account: added now/).waitFor();
+      await owner.getByRole("button", { name: "Add now" }).click();
+      await owner.getByText(/already had an account and was added to/).waitFor();
       await waitForMail(mentorEmail, "added to");
-      await owner.getByText(/In this cohort \(1\)/).waitFor();
+      await owner.goto(`${BASE}/manage/advisors`);
+      await owner.getByText(/All advisors \(1\)/).waitFor();
+      await owner.getByRole("link", { name: `E2E Spring ${run}` }).last().waitFor();
       await shot(owner, "19-advisors-added");
+      // Founders see their cohort's advisors on the home page and the Advisors tab.
+      await founder.goto(`${BASE}/app/cohorts/${cohortId}`);
+      await founder.getByRole("link", { name: "Maya Mentor" }).first().waitFor();
+      await founder.getByRole("link", { name: "Advisors", exact: true }).first().click();
+      await founder.getByRole("heading", { name: "Advisors", exact: true }).waitFor();
+      // The advisor sees teams and progress on the cohort home too.
+      await mentorPage.goto(`${BASE}/app/cohorts/${cohortId}`);
+      await mentorPage.getByText("Teams & progress").waitFor();
+      await mentorPage.getByRole("link", { name: `Acme ${run}` }).first().waitFor();
       // Same account, no new sign-up: the mentor's area now lists both cohorts.
       await mentorPage.goto(`${BASE}/mentor/availability`);
       await mentorPage.getByText(new RegExp(`E2E Spring ${run}`)).first().waitFor();

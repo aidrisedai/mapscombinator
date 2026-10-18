@@ -21,7 +21,7 @@ type Row = Record<string, unknown>;
 
 const GROUPS = [
   { role: "admin", title: "Administrators", blurb: "Run this cohort: startups, invitations, weekly guide, office hours and announcements.", empty: "No cohort administrator yet." },
-  { role: "mentor", title: "Mentors & advisors", blurb: "Advise startups, offer bookable appointments and read the published journal.", empty: "No mentors or advisors yet." },
+  { role: "mentor", title: "Mentors & advisors", blurb: "Advise startups, offer bookable appointments and read the published journal. Add and manage them under Manage → Advisors.", empty: "No mentors or advisors yet." },
   { role: "viewer", title: "Viewers", blurb: "Read published updates, the weekly guide and sessions. They can't post or see drafts.", empty: "No viewers yet." },
 ] as const;
 

@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { UpdateCard } from "@/components/journal/UpdateCard";
-import { Badge, Card, EmptyState, ExternalLink, PageHeader, Prose, SectionTitle, cx } from "@/components/ui/primitives";
+import { TeamProgressTable } from "@/components/mentors/TeamProgressTable";
+import { Card, EmptyState, ExternalLink, PageHeader, Prose, SectionTitle, cx } from "@/components/ui/primitives";
 import { advisorDigest } from "@/lib/server/domain/advisors";
 import { load, one } from "@/lib/server/page";
 import { formatDate } from "@/lib/time";
@@ -37,7 +38,7 @@ export default async function AdvisorStartupsPage({ searchParams }: { searchPara
 
   return (
     <>
-      <PageHeader title="Startups" description="Every team's published daily updates and weekly summaries, with this week's guide and materials. Drafts are never shown." />
+      <PageHeader title="Startups" description="Your cohort's teams and their progress: every team's published daily updates and weekly summaries, with this week's guide and materials. Drafts are never shown." />
       <OnBehalfBanner ctx={ctx} />
       {cohorts.length > 1 && (
         <nav aria-label="Cohort" className="mb-5 flex flex-wrap gap-2">
@@ -65,6 +66,18 @@ export default async function AdvisorStartupsPage({ searchParams }: { searchPara
           {d.week < d.weekCount && <Link className="rounded-md border border-line px-3 py-1.5 font-medium text-forest hover:border-forest" href={href({ week: d.week + 1 })}>Week {d.week + 1} →</Link>}
         </div>
       </div>
+
+      <section aria-labelledby="progress-h" className="mb-10">
+        <SectionTitle>
+          <span id="progress-h">Teams &amp; progress</span>
+        </SectionTitle>
+        <TeamProgressTable
+          rows={d.teams.map((t) => ({ id: t.id, name: t.name, dailies: t.dailiesThisWeek, weekly: Boolean(t.weekly), weekliesPosted: t.weekliesPosted, total: 0, lastPublished: t.lastPublished }))}
+          cohortId={cohortId}
+          week={d.week}
+          tz={tz}
+        />
+      </section>
 
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
         <div className="space-y-10">
@@ -163,23 +176,9 @@ export default async function AdvisorStartupsPage({ searchParams }: { searchPara
               </div>
             )}
           </Card>
-          <Card>
-            <SectionTitle>Startups this week</SectionTitle>
-            <ul className="divide-y divide-line/60 text-sm">
-              {d.teams.map((t) => (
-                <li key={t.id} className="flex flex-wrap items-center justify-between gap-2 py-2 first:pt-0">
-                  <Link href={`${appBase}/startups/${t.id}`} className="font-medium text-forest hover:text-emerald">{t.name}</Link>
-                  <span className="flex flex-wrap gap-1.5">
-                    <Badge tone="neutral">{t.dailiesThisWeek} daily</Badge>
-                    {t.weekly ? <Badge tone="published">Weekly ✓</Badge> : <Badge tone="warn">No weekly</Badge>}
-                  </span>
-                </li>
-              ))}
-            </ul>
-            <p className="mt-3 text-xs text-ink/60">
-              Open a startup for its full timeline, or see everything in the <Link href={`${appBase}/journal`} className="font-medium text-emerald hover:text-forest">cohort journal</Link>.
-            </p>
-          </Card>
+          <p className="text-xs text-ink/60">
+            Open a startup for its full timeline, or see everything in the <Link href={`${appBase}/journal`} className="font-medium text-emerald hover:text-forest">cohort journal</Link>.
+          </p>
         </aside>
       </div>
     </>

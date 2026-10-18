@@ -1,11 +1,10 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
-import { CheckboxField, TextField } from "@/components/ui/forms";
-import { OpForm } from "@/components/office-hours/OpForm";
+import { TextField } from "@/components/ui/forms";
 import { Badge, buttonClass, cx } from "@/components/ui/primitives";
 import { inputClass } from "@/components/ui/forms";
-import { addAdvisorsAction, addExistingAdvisorsAction, addOneAdvisorAction, previewAdvisorsAction, previewOneAdvisorAction } from "./actions";
+import { addAdvisorToCohortsAction, addAdvisorsAction, assignAdvisorAction, previewAdvisorForCohortsAction, previewAdvisorsAction } from "./actions";
 
 type Plan = { line: number; name: string; email: string; error?: string; action: "invite" | "add_existing" | "already" | "pending" | "skip"; accountName?: string };
 
@@ -104,48 +103,37 @@ export function InviteAdvisors({ cohortId }: { cohortId: string }) {
   );
 }
 
-export function AddExistingAdvisors({ cohortId, people }: { cohortId: string; people: { id: string; name: string; email: string; headline: string | null; cohorts: string[] }[] }) {
-  return (
-    <OpForm action={addExistingAdvisorsAction} submitLabel="Add selected to this cohort" pendingLabel="Adding…" successMessage="Added.">
-      <input type="hidden" name="cohortId" value={cohortId} />
-      <div className="space-y-3">
-        {people.map((p) => (
-          <CheckboxField
-            key={p.id}
-            name="accountId"
-            value={p.id}
-            label={
-              <>
-                {p.name} <span className="text-ink/60">{p.email}</span>
-              </>
-            }
-            hint={[p.headline, `Advises: ${p.cohorts.join(", ")}`].filter(Boolean).join(" · ")}
-          />
-        ))}
-      </div>
-    </OpForm>
-  );
-}
+type Cohort = { id: string; name: string };
+type MultiPreview = {
+  name: string;
+  email: string;
+  expertise: string[];
+  linkedinUrl: string | null;
+  cohorts: { cohortId: string; cohortName: string; action: Plan["action"]; error?: string; accountName?: string }[];
+};
 
-type OnePreview = Plan & { expertise: string[]; linkedinUrl: string | null };
+const ACTION_TEXT: Record<Plan["action"], string> = {
+  invite: "New: gets an invitation",
+  add_existing: "Has an account: added now",
+  already: "Already an advisor here",
+  pending: "Invitation already pending",
+  skip: "Can't be added",
+};
 
-/** The simple form: one advisor at a time, with a check of what will happen before anything is sent. */
-export function AddAdvisorForm({ cohortId, cohortName }: { cohortId: string; cohortName: string }) {
+/** One advisor, one or more cohorts, with a check of what will happen before anything is sent. */
+export function AddAdvisorForm({ cohorts, defaultCohortIds }: { cohorts: Cohort[]; defaultCohortIds: string[] }) {
   const formRef = useRef<HTMLFormElement>(null);
-  const [preview, setPreview] = useState<OnePreview | null>(null);
+  const [preview, setPreview] = useState<MultiPreview | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
   const [pending, start] = useTransition();
-  const fd = () => {
-    const f = new FormData(formRef.current!);
-    f.set("cohortId", cohortId);
-    return f;
-  };
+  const fd = () => new FormData(formRef.current!);
+  const doable = preview?.cohorts.filter((c) => c.action === "invite" || c.action === "add_existing") ?? [];
   const run = (kind: "preview" | "send") =>
     start(async () => {
       try {
-        const r = kind === "preview" ? await previewOneAdvisorAction(fd()) : await addOneAdvisorAction(fd());
+        const r = kind === "preview" ? await previewAdvisorForCohortsAction(fd()) : await addAdvisorToCohortsAction(fd());
         if (!r.ok) {
           setError(r.error);
           setErrors(r.fieldErrors ?? {});
@@ -155,7 +143,7 @@ export function AddAdvisorForm({ cohortId, cohortName }: { cohortId: string; coh
         setError(null);
         setErrors({});
         if (kind === "preview") {
-          setPreview(r.data as OnePreview);
+          setPreview(r.data as MultiPreview);
           setDone(null);
         } else {
           setDone((r.data as { message: string }).message);
@@ -166,14 +154,13 @@ export function AddAdvisorForm({ cohortId, cohortName }: { cohortId: string; coh
         setError("We couldn't reach the server. Your details are still here; try again.");
       }
     });
-
-  const confirmLabel = preview?.action === "invite" ? "Send invitation" : preview?.action === "add_existing" ? "Add to cohort now" : null;
+  const isNew = preview?.cohorts.some((c) => c.action === "invite");
   return (
     <form
       ref={formRef}
       onSubmit={(e) => {
         e.preventDefault();
-        run(preview && confirmLabel ? "send" : "preview");
+        run(preview && doable.length ? "send" : "preview");
       }}
       onChange={() => {
         setPreview(null);
@@ -188,32 +175,51 @@ export function AddAdvisorForm({ cohortId, cohortName }: { cohortId: string; coh
       </div>
       <TextField label="Areas of expertise" name="expertise" optional placeholder="e.g. Fundraising, B2B sales, Pricing" hint="Separate with commas. Pre-fills their profile; they can edit it." error={errors.expertise} />
       <TextField label="LinkedIn" name="linkedinUrl" optional placeholder="linkedin.com/in/their-name" error={errors.linkedinUrl} />
+      <fieldset>
+        <legend className="text-sm font-semibold text-ink">Cohorts they advise <span className="text-error" aria-hidden="true">*</span></legend>
+        <p className="mt-0.5 text-xs text-ink/60">They see these cohorts&apos; startups, progress and weekly materials, and founders there can see and book them.</p>
+        <div className="mt-2 grid gap-1.5 sm:grid-cols-2">
+          {cohorts.map((c) => (
+            <label key={c.id} className="flex items-start gap-2 text-sm">
+              <input type="checkbox" name="cohortId" value={c.id} defaultChecked={defaultCohortIds.includes(c.id)} className="mt-1 accent-forest" />
+              <span>{c.name}</span>
+            </label>
+          ))}
+        </div>
+        {errors.cohortIds && <p className="mt-1 text-sm text-error">{errors.cohortIds}</p>}
+      </fieldset>
       {error && <p role="alert" className="rounded-md border border-error/40 bg-error/5 px-3 py-2 text-sm text-error">{error}</p>}
       {done && <p role="status" className="rounded-md border border-emerald/40 bg-emerald/5 px-3 py-2 text-sm text-success">{done}</p>}
       {preview && (
         <div className="rounded-md border border-forest/30 bg-forest/5 p-4 text-sm" role="status">
           <p className="flex flex-wrap items-center gap-2">
-            <strong>{preview.accountName ?? preview.name}</strong> <span className="break-all text-ink/60">{preview.email}</span>
-            <Badge tone={LABEL[preview.action].tone}>{LABEL[preview.action].text}</Badge>
+            <strong>{preview.cohorts[0]?.accountName ?? preview.name}</strong> <span className="break-all text-ink/60">{preview.email}</span>
           </p>
+          <ul className="mt-2 space-y-1">
+            {preview.cohorts.map((c) => (
+              <li key={c.cohortId} className="flex flex-wrap items-center gap-2">
+                <span className="font-medium">{c.cohortName}</span>
+                <Badge tone={LABEL[c.action].tone}>{ACTION_TEXT[c.action]}</Badge>
+                {c.error && <span className="text-xs text-error">{c.error}</span>}
+              </li>
+            ))}
+          </ul>
           <p className="mt-2 text-ink/80">
-            {preview.action === "invite" && `They'll get the advisor invitation email for ${cohortName}. They confirm their email with a code, set a password, then complete their profile.`}
-            {preview.action === "add_existing" && `They already have an account, so they're added to ${cohortName} immediately and get a short email. No new sign-up.`}
-            {preview.action === "already" && "They're already an advisor in this cohort. Nothing to do."}
-            {preview.action === "pending" && "They already have a pending invitation. Use Resend under “Pending advisor invitations” instead."}
-            {preview.action === "skip" && (preview.error ?? "This person can't be added.")}
+            {isNew
+              ? "They get one invitation email, confirm their email with a code, set a password and complete their profile. They join every cohort above when they accept."
+              : doable.length
+                ? "They already have an account, so they're added straight away and get a short email. No new sign-up."
+                : "Nothing to do for these cohorts."}
           </p>
           {(preview.expertise.length > 0 || preview.linkedinUrl) && (
-            <p className="mt-1 text-xs text-ink/60">
-              Profile pre-fill: {[preview.expertise.join(", "), preview.linkedinUrl].filter(Boolean).join(" · ")}
-            </p>
+            <p className="mt-1 text-xs text-ink/60">Profile pre-fill: {[preview.expertise.join(", "), preview.linkedinUrl].filter(Boolean).join(" · ")}</p>
           )}
         </div>
       )}
       <div className="flex flex-wrap gap-3">
-        {preview && confirmLabel ? (
+        {preview && doable.length ? (
           <>
-            <button type="submit" disabled={pending} className={buttonClass("primary")}>{pending ? "Sending…" : confirmLabel}</button>
+            <button type="submit" disabled={pending} className={buttonClass("primary")}>{pending ? "Sending…" : isNew ? "Send invitation" : "Add now"}</button>
             <button type="button" disabled={pending} className={buttonClass("secondary")} onClick={() => setPreview(null)}>Edit</button>
           </>
         ) : (
@@ -221,5 +227,62 @@ export function AddAdvisorForm({ cohortId, cohortName }: { cohortId: string; coh
         )}
       </div>
     </form>
+  );
+}
+
+/** Paste a list for one cohort. */
+export function BulkAdvisors({ cohorts, defaultCohortId }: { cohorts: Cohort[]; defaultCohortId: string }) {
+  const [cohortId, setCohortId] = useState(defaultCohortId);
+  return (
+    <div className="space-y-4">
+      <div>
+        <label htmlFor="bulk-cohort" className="block text-sm font-semibold text-ink">Cohort</label>
+        <select id="bulk-cohort" value={cohortId} onChange={(e) => setCohortId(e.target.value)} className={cx(inputClass, "mt-1.5")}>
+          {cohorts.map((c) => (
+            <option key={c.id} value={c.id}>{c.name}</option>
+          ))}
+        </select>
+      </div>
+      <InviteAdvisors key={cohortId} cohortId={cohortId} />
+    </div>
+  );
+}
+
+/** Add an existing advisor to another cohort. */
+export function AssignToCohort({ accountId, options }: { accountId: string; options: Cohort[] }) {
+  const [cohortId, setCohortId] = useState(options[0]?.id ?? "");
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [pending, start] = useTransition();
+  if (!options.length) return null;
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <label className="sr-only" htmlFor={`assign-${accountId}`}>Add to cohort</label>
+      <select id={`assign-${accountId}`} value={cohortId} onChange={(e) => setCohortId(e.target.value)} className="rounded-md border border-line bg-paper px-2 py-1.5 text-xs">
+        {options.map((c) => (
+          <option key={c.id} value={c.id}>{c.name}</option>
+        ))}
+      </select>
+      <button
+        type="button"
+        disabled={pending}
+        className={buttonClass("secondary", "sm")}
+        onClick={() =>
+          start(async () => {
+            const f = new FormData();
+            f.set("cohortId", cohortId);
+            f.set("accountId", accountId);
+            try {
+              const r = await assignAdvisorAction(f);
+              setMsg(r.ok ? { ok: true, text: (r.data as { message: string }).message } : { ok: false, text: r.error });
+            } catch {
+              setMsg({ ok: false, text: "Couldn't reach the server. Try again." });
+            }
+          })
+        }
+      >
+        {pending ? "Adding…" : "Add to cohort"}
+      </button>
+      {msg && <span role={msg.ok ? "status" : "alert"} className={cx("text-xs", msg.ok ? "text-success" : "text-error")}>{msg.text}</span>}
+    </div>
   );
 }
