@@ -451,6 +451,10 @@ try {
       await owner.getByRole("button", { name: "Send invitation" }).click();
       await owner.getByText(/Invitation sent to New Advisor/).waitFor();
       await waitForMail(`advisor-${run}@example.org`, "invited");
+      // The invite link can be copied right away to send personally.
+      await owner.getByRole("button", { name: "Copy invite link" }).first().click();
+      const advLink = await owner.getByLabel(`Invite link for advisor-${run}@example.org`).inputValue();
+      if (!advLink.includes("/accept-invitation#")) throw new Error("advisor invite link not shown");
       // The same form recognises an existing account and adds it without a new sign-up.
       await owner.getByLabel(/^Full name/).fill("Maya");
       await owner.getByLabel(/^Email/).first().fill(mentorEmail);
@@ -463,6 +467,17 @@ try {
       await owner.getByText(/All advisors \(1\)/).waitFor();
       await owner.getByRole("link", { name: `E2E Spring ${run}` }).last().waitFor();
       await shot(owner, "19-advisors-added");
+      // Same account, no new sign-up: the mentor's area now lists both cohorts.
+      await mentorPage.goto(`${BASE}/mentor/availability`);
+      await mentorPage.getByText(new RegExp(`E2E Spring ${run}`)).first().waitFor();
+      // Remove the advisor from Spring: access ends and they're emailed.
+      await owner.locator("li", { hasText: `E2E Spring ${run}` }).getByRole("button", { name: "×" }).first().click();
+      await waitForMail(mentorEmail, "Update on your mentor / advisor role");
+      const removed = latestMailTo(mentorEmail, "Update on your mentor / advisor role");
+      if (!/If you think this was a mistake/.test(removed.text)) throw new Error("removal email lacks the mistake note");
+      await mentorPage.goto(`${BASE}/mentor/availability`);
+      await mentorPage.getByText(`E2E Cohort ${run}`).first().waitFor();
+      if (await mentorPage.getByText(new RegExp(`E2E Spring ${run}`)).count()) throw new Error("removed cohort still visible to the advisor");
       // Founders see their cohort's advisors on the home page and the Advisors tab.
       await founder.goto(`${BASE}/app/cohorts/${cohortId}`);
       await founder.getByRole("link", { name: "Maya Mentor" }).first().waitFor();
@@ -472,9 +487,6 @@ try {
       await mentorPage.goto(`${BASE}/app/cohorts/${cohortId}`);
       await mentorPage.getByText("Teams & progress").waitFor();
       await mentorPage.getByRole("link", { name: `Acme ${run}` }).first().waitFor();
-      // Same account, no new sign-up: the mentor's area now lists both cohorts.
-      await mentorPage.goto(`${BASE}/mentor/availability`);
-      await mentorPage.getByText(new RegExp(`E2E Spring ${run}`)).first().waitFor();
     });
 
     await step("emails: founder got a welcome email; admin edits the acceptance email and emails all startups personally", async () => {

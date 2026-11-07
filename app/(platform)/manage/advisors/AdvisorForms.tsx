@@ -4,6 +4,7 @@ import { useRef, useState, useTransition } from "react";
 import { TextField } from "@/components/ui/forms";
 import { Badge, buttonClass, cx } from "@/components/ui/primitives";
 import { inputClass } from "@/components/ui/forms";
+import { CopyInviteLink } from "../_components/CopyInviteLink";
 import { addAdvisorToCohortsAction, addAdvisorsAction, assignAdvisorAction, previewAdvisorForCohortsAction, previewAdvisorsAction } from "./actions";
 
 type Plan = { line: number; name: string; email: string; error?: string; action: "invite" | "add_existing" | "already" | "pending" | "skip"; accountName?: string };
@@ -127,6 +128,7 @@ export function AddAdvisorForm({ cohorts, defaultCohortIds }: { cohorts: Cohort[
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
+  const [newInvite, setNewInvite] = useState<{ id: string; email: string; name: string } | null>(null);
   const [pending, start] = useTransition();
   const fd = () => new FormData(formRef.current!);
   const doable = preview?.cohorts.filter((c) => c.action === "invite" || c.action === "add_existing") ?? [];
@@ -146,7 +148,9 @@ export function AddAdvisorForm({ cohorts, defaultCohortIds }: { cohorts: Cohort[
           setPreview(r.data as MultiPreview);
           setDone(null);
         } else {
-          setDone((r.data as { message: string }).message);
+          const d = r.data as { message: string; invitationId: string | null; email: string };
+          setDone(d.message);
+          setNewInvite(d.invitationId ? { id: d.invitationId, email: d.email, name: String(fd().get("name") ?? "") } : null);
           setPreview(null);
           formRef.current?.reset();
         }
@@ -165,6 +169,7 @@ export function AddAdvisorForm({ cohorts, defaultCohortIds }: { cohorts: Cohort[
       onChange={() => {
         setPreview(null);
         setDone(null);
+        setNewInvite(null);
       }}
       className="space-y-4"
       noValidate
@@ -190,6 +195,12 @@ export function AddAdvisorForm({ cohorts, defaultCohortIds }: { cohorts: Cohort[
       </fieldset>
       {error && <p role="alert" className="rounded-md border border-error/40 bg-error/5 px-3 py-2 text-sm text-error">{error}</p>}
       {done && <p role="status" className="rounded-md border border-emerald/40 bg-emerald/5 px-3 py-2 text-sm text-success">{done}</p>}
+      {done && newInvite && (
+        <div>
+          <p className="mb-1 text-sm text-ink/70">Send the invite link yourself too (WhatsApp, text, your own email):</p>
+          <CopyInviteLink invitationId={newInvite.id} email={newInvite.email} name={newInvite.name} />
+        </div>
+      )}
       {preview && (
         <div className="rounded-md border border-forest/30 bg-forest/5 p-4 text-sm" role="status">
           <p className="flex flex-wrap items-center gap-2">

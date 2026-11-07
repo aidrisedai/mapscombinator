@@ -6,6 +6,7 @@ import { buttonClass, cx } from "@/components/ui/primitives";
 import { previewInvitationAction, sendInvitationAction, type InvitationPreview } from "../actions";
 
 import { ROLE_LABEL } from "./roles";
+import { CopyInviteLink } from "./CopyInviteLink";
 
 const NETWORK = "We couldn't reach the server. Nothing was sent. Check your connection and try again.";
 
@@ -26,7 +27,7 @@ function useInvite() {
   const [preview, setPreview] = useState<InvitationPreview | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const [sentTo, setSentTo] = useState<string | null>(null);
+  const [sentTo, setSentTo] = useState<{ to: string; invitationId: string | null; name: string | null } | null>(null);
 
   function runPreview(fields: Record<string, string>) {
     start(async () => {
@@ -48,7 +49,7 @@ function useInvite() {
     start(async () => {
       const r = await call(sendInvitationAction, fields);
       if (r.ok) {
-        setSentTo(preview?.to ?? fields.email);
+        setSentTo({ to: preview?.to ?? fields.email, invitationId: (r.data as { invitationId?: string } | undefined)?.invitationId ?? null, name: fields.name ?? null });
         setPreview(null);
         setError(null);
         onSent?.();
@@ -117,11 +118,14 @@ function PreviewPanel({ preview, pending, error, onConfirm, onCancel }: { previe
   );
 }
 
-function SentNotice({ to }: { to: string }) {
+function SentNotice({ sent }: { sent: { to: string; invitationId: string | null; name: string | null } }) {
   return (
-    <p role="status" className="mt-3 rounded-md border border-emerald/40 bg-emerald/5 px-3 py-2 text-sm text-success">
-      Invitation queued for {to}. To send it yourself (WhatsApp, text, your own email), use “Copy invite link” in the invitations list.
-    </p>
+    <div className="mt-3 space-y-2">
+      <p role="status" className="rounded-md border border-emerald/40 bg-emerald/5 px-3 py-2 text-sm text-success">
+        Invitation queued for {sent.to}. You can also send the invite link yourself (WhatsApp, text, your own email):
+      </p>
+      {sent.invitationId && <CopyInviteLink invitationId={sent.invitationId} email={sent.to} name={sent.name} />}
+    </div>
   );
 }
 
@@ -153,7 +157,7 @@ export function InviteContactButton({ cohortId, enrollmentId, name, email, autoO
         </p>
       )}
       {inv.preview && <PreviewPanel preview={inv.preview} pending={inv.pending} error={inv.error} onConfirm={() => inv.confirm(fields)} onCancel={inv.cancel} />}
-      {inv.sentTo && <SentNotice to={inv.sentTo} />}
+      {inv.sentTo && <SentNotice sent={inv.sentTo} />}
     </div>
   );
 }
@@ -242,7 +246,7 @@ export function InviteForm({
           onCancel={inv.cancel}
         />
       )}
-      {inv.sentTo && <SentNotice to={inv.sentTo} />}
+      {inv.sentTo && <SentNotice sent={inv.sentTo} />}
     </div>
   );
 }

@@ -158,7 +158,8 @@ export async function sendInvitationAction(fd: FormData) {
     if (str(fd, "addContact") === "1" && input.role === "founder" && input.cohortId && input.enrollmentId) {
       await addContact(actor, input.cohortId, input.enrollmentId, { name: str(fd, "name"), email: str(fd, "email") });
     }
-    await createInvitation(actor, input);
+    const invitationId = await createInvitation(actor, input);
+    return { invitationId };
   });
 }
 

@@ -1,7 +1,7 @@
 "use server";
 
 import { act, str } from "@/lib/server/action";
-import { addAdvisorToCohorts, addAdvisors, addExistingAdvisors, previewAdvisorForCohorts, previewAdvisors } from "@/lib/server/domain/advisors";
+import { addAdvisorToCohorts, addAdvisors, addExistingAdvisors, previewAdvisorForCohorts, previewAdvisors, removeAdvisor } from "@/lib/server/domain/advisors";
 
 export async function previewAdvisorsAction(fd: FormData) {
   return act((actor) => previewAdvisors(actor, str(fd, "cohortId"), str(fd, "list")));
@@ -58,5 +58,12 @@ export async function assignAdvisorAction(fd: FormData) {
   return act(async (actor) => {
     const n = await addExistingAdvisors(actor, str(fd, "cohortId"), [str(fd, "accountId")]);
     return { message: n ? "Added. They were emailed; no new sign-up needed." : "Already in that cohort." };
+  });
+}
+
+export async function removeAdvisorAction(fd: FormData) {
+  return act(async (actor) => {
+    const names = await removeAdvisor(actor, str(fd, "accountId"));
+    return { message: `Removed from ${names.join(", ")}. They've been emailed and can reply if they think it was a mistake.` };
   });
 }

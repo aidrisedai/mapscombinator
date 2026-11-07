@@ -4,8 +4,10 @@ import { createStartup } from "@/lib/server/domain/startups";
 import { saveUpdate } from "@/lib/server/domain/updates";
 import { publishWeek, saveWeekDraft, addLinkResource } from "@/lib/server/domain/weeks";
 import { updateMentorCalendar } from "@/lib/server/domain/mentors";
+import { revokeCohortRole } from "@/lib/server/domain/cohorts";
+import { render } from "@/lib/server/email/templates";
 import { getCohortMentor } from "@/lib/server/domain/bookings";
-import { addAdvisorToCohorts, addAdvisors, addExistingAdvisors, addOneAdvisor, advisorDigest, cohortAdvisorsPreview, listAllAdvisors, listOtherAdvisors, parseAdvisorList, previewAdvisors, previewOneAdvisor, teamProgress } from "@/lib/server/domain/advisors";
+import { removeAdvisor, addAdvisorToCohorts, addAdvisors, addExistingAdvisors, addOneAdvisor, advisorDigest, cohortAdvisorsPreview, listAllAdvisors, listOtherAdvisors, parseAdvisorList, previewAdvisors, previewOneAdvisor, teamProgress } from "@/lib/server/domain/advisors";
 import { consumeInvitation, hashToken, newToken } from "@/lib/server/domain/invitations";
 import { tx } from "@/lib/server/db";
 import { todayIn } from "@/lib/time";
@@ -187,5 +189,44 @@ describe("advisor onboarding", () => {
     expect(preview.advisors.map((a) => a.name)).toEqual(["Veteran Advisor"]);
     const progress = await teamProgress(w.vet, w.C2.id);
     expect(progress?.teams.map((t) => t.name)).toEqual(["Alpha"]);
+  });
+
+  it("removing an advisor emails them, with a way to say it was a mistake", async () => {
+    const w = await world();
+    await addExistingAdvisors(w.owner, w.C2.id, [w.vet.id]);
+    // From one cohort (× on a cohort chip, or Members → Remove).
+    const [role] = await sql()`select id from cohort_roles where account_id = ${w.vet.id} and cohort_id = ${w.C2.id} and role = 'mentor' and active`;
+    await revokeCohortRole(w.owner, w.C2.id, role.id);
+    let mails = await sql()`select payload from email_outbox where template = 'advisor_removed' and recipient_email = ${w.vet.email} order by created_at`;
+    expect(mails).toHaveLength(1);
+    expect(mails[0].payload).toMatchObject({ cohorts: "Spring", stillActive: "yes" });
+    const r = render("advisor_removed", mails[0].payload);
+    expect(r.text).toMatch(/removed as a mentor \/ advisor for Spring/);
+    expect(r.text).toMatch(/If you think this was a mistake, just reply to this email/);
+    expect(r.text).toMatch(/other cohorts you still advise are not affected/);
+    // From every cohort at once: one email listing them all.
+    await addExistingAdvisors(w.owner, w.C2.id, [w.vet.id]);
+    expect((await removeAdvisor(w.owner, w.vet.id)).sort()).toEqual(["Fall", "Spring"]);
+    const active = await sql()`select 1 from cohort_roles where account_id = ${w.vet.id} and role = 'mentor' and active`;
+    expect(active).toHaveLength(0);
+    mails = await sql()`select payload from email_outbox where template = 'advisor_removed' and recipient_email = ${w.vet.email} order by created_at`;
+    expect(mails).toHaveLength(2);
+    expect(mails[1].payload).toMatchObject({ cohorts: "Fall, Spring", stillActive: "" });
+    await expect(removeAdvisor(w.owner, w.vet.id)).rejects.toThrow(/aren't an advisor/);
+  });
+
+  it("only removes advisors from cohorts you manage; founders can't remove anyone", async () => {
+    const w = await world();
+    await addExistingAdvisors(w.owner, w.C2.id, [w.vet.id]);
+    expect(await removeAdvisor(w.admin2, w.vet.id)).toEqual(["Spring"]); // admin2 runs Spring only
+    const [fall] = await sql()`select 1 from cohort_roles where account_id = ${w.vet.id} and cohort_id = ${w.C1.id} and role = 'mentor' and active`;
+    expect(fall).toBeTruthy();
+    await expect(removeAdvisor(w.fa, w.vet.id)).rejects.toThrow();
+  });
+
+  it("a new advisor's invitation id comes back so the link can be copied right away", async () => {
+    const w = await world();
+    const r = await addAdvisorToCohorts(w.owner, { name: "Link Person", email: `link-${w.C1.id.slice(0, 6)}@example.org`, cohortIds: [w.C1.id] });
+    expect(r.invitationId).toMatch(/^[0-9a-f-]{36}$/);
   });
 });

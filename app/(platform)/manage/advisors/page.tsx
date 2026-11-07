@@ -7,6 +7,7 @@ import { profileGaps } from "@/lib/server/domain/mentors";
 import { load, one } from "@/lib/server/page";
 import { requirePageAccount } from "@/lib/server/session";
 import { revokeCohortRoleAction } from "../actions";
+import { removeAdvisorAction } from "./actions";
 import { InvitationList } from "../_components/InvitationList";
 import { AddAdvisorForm, AssignToCohort, BulkAdvisors } from "./AdvisorForms";
 
@@ -75,7 +76,7 @@ export default async function AdvisorsPage({ searchParams }: { searchParams: Pro
                               label="×"
                               pendingLabel="…"
                               variant="ghost"
-                              confirmMessage={`Remove ${r.display_name as string} from ${c.cohortName}? Their access to that cohort ends immediately; their account and other cohorts aren't affected.`}
+                              confirmMessage={`Remove ${r.display_name as string} from ${c.cohortName}? Their access to that cohort ends immediately and they'll get an email saying so (they can reply if it's a mistake). Their account and other cohorts aren't affected.`}
                             />
                           )}
                         </li>
@@ -85,6 +86,16 @@ export default async function AdvisorsPage({ searchParams }: { searchParams: Pro
                       <Link href={`/mentor/profile?mentor=${r.id}`} className={linkCls}>Profile</Link>
                       <Link href={`/mentor/availability?mentor=${r.id}`} className={linkCls}>Availability</Link>
                       <AssignToCohort accountId={r.id as string} options={writable.filter((c) => !inIds.has(c.id))} />
+                      {cohorts.some((c) => c.status !== "archived") && (
+                        <ActionButton
+                          action={removeAdvisorAction}
+                          fields={{ accountId: r.id as string }}
+                          label="Remove advisor"
+                          pendingLabel="Removing…"
+                          variant="danger"
+                          confirmMessage={`Remove ${r.display_name as string} as an advisor from all your cohorts (${cohorts.filter((c) => c.status !== "archived").map((c) => c.cohortName).join(", ")})?\n\nTheir access ends immediately and they'll get an email saying they've been removed, with a note to reply if they think it's a mistake. Their account and history are kept.`}
+                        />
+                      )}
                     </div>
                   </li>
                 );

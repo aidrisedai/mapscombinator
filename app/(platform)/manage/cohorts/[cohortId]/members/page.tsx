@@ -102,7 +102,7 @@ export default async function MembersPage({ params }: { params: Promise<{ cohort
                             label="Remove"
                             pendingLabel="Removing…"
                             variant="danger"
-                            confirmMessage={`Remove ${r.display_name as string} as ${g.title.toLowerCase().replace(/s$/, "")} of ${cohort.name}? Their access ends immediately; their account and other cohorts aren't affected.`}
+                            confirmMessage={`Remove ${r.display_name as string} as ${g.title.toLowerCase().replace(/s$/, "")} of ${cohort.name}? Their access ends immediately${g.role === "mentor" ? " and they'll get an email saying so (they can reply if it's a mistake)" : ""}; their account and other cohorts aren't affected.`}
                           />
                         )}
                       </div>

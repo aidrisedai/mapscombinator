@@ -14,6 +14,8 @@ import { parse } from "./validate";
 import { email as emailSchema, requiredText } from "@/lib/validation";
 import { getOrganization } from "./organization";
 import { publishedUpdatesFor } from "./updates";
+import { revokeRoleIn } from "./cohorts";
+import { queueAdvisorRemoved } from "./advisor-notices";
 import { getWeekForReader } from "./weeks";
 import { forbidden } from "../errors";
 
@@ -304,7 +306,7 @@ export async function previewAdvisorForCohorts(actor: Account, input: { name: st
 export async function addAdvisorToCohorts(actor: Account, input: { name: string; email: string; expertise?: string; linkedinUrl?: string; cohortIds: string[] }) {
   const p = await previewAdvisorForCohorts(actor, input);
   const prefill: Prefill = { expertise: p.expertise, linkedinUrl: p.linkedinUrl };
-  const result = { invited: [] as string[], added: [] as string[], already: [] as string[], pending: [] as string[], willJoin: [] as string[] };
+  const result = { invited: [] as string[], added: [] as string[], already: [] as string[], pending: [] as string[], willJoin: [] as string[], invitationId: null as string | null, email: p.email };
   const skip = p.cohorts.find((c) => c.action === "skip");
   if (skip) throw invalid(skip.error ?? "This person can't be added.");
   const [acct] = await sql()`select id from accounts where email = ${p.email}`;
@@ -322,6 +324,7 @@ export async function addAdvisorToCohorts(actor: Account, input: { name: string;
   const id = await createInvitation(actor, { role: "mentor", email: p.email, name: p.name, cohortId: first.cohortId });
   await sql()`update invitations set profile_prefill = ${sql().json({ ...prefill, extraCohortIds: rest.map((c) => c.cohortId) } as never)} where id = ${id}`;
   result.invited.push(first.cohortName);
+  result.invitationId = id;
   result.willJoin.push(...rest.map((c) => c.cohortName));
   return result;
 }
@@ -414,4 +417,23 @@ export async function advisorDigest(actor: Account, cohortId: string, q: { week?
       lastPublished: (countBy.get(s.id as string)?.last_published as Date | null) ?? null,
     })),
   };
+}
+
+/**
+ * Remove an advisor from every cohort this person manages (or the listed
+ * ones), in one step, and email them once. Their account is kept, so other
+ * cohorts and history are unaffected.
+ */
+export async function removeAdvisor(actor: Account, accountId: string, onlyCohortIds?: string[]) {
+  if (!/^[0-9a-f-]{36}$/i.test(accountId)) throw invalid("Advisor not found.");
+  const managed = (await adminCohorts(actor)).filter((c) => c.status !== "archived").map((c) => c.id as string);
+  const scope = onlyCohortIds?.length ? managed.filter((id) => onlyCohortIds.includes(id)) : managed;
+  return tx(async (t) => {
+    const roles = await t`select r.id, r.cohort_id, c.name from cohort_roles r join cohorts c on c.id = r.cohort_id
+                          where r.account_id = ${accountId} and r.role = 'mentor' and r.active and r.cohort_id = any(${scope})`;
+    if (!roles.length) throw invalid("They aren't an advisor in any cohort you manage.");
+    for (const r of roles) await revokeRoleIn(t, actor, r.cohort_id, r.id);
+    await queueAdvisorRemoved(t, actor, accountId, roles.map((r) => r.cohort_id as string));
+    return roles.map((r) => r.name as string);
+  });
 }

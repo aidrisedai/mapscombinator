@@ -34,7 +34,7 @@ Cohort → **Office hours** → **Add session**. For a weekly series, tick *Repe
 To change one date, edit it with *This occurrence*. To change all remaining dates, choose *This and future occurrences*; past sessions are never changed. **Cancel** keeps the session visible as cancelled, and offers a cancellation email (pre-checked if that session was emailed before).
 
 ## Sending an invite link yourself
-Every pending invitation, on a startup's page, Members and Manage → Advisors, has a **Copy invite link** button. It copies a link you can send yourself; the panel also has **WhatsApp** and **Email it yourself** buttons that open a ready-written message.
+Right after you invite a founder or cofounder (on the startup's page, or with "Save and invite primary contact") or add a new advisor, the confirmation shows a **Copy invite link** button. Every pending invitation, on a startup's page, Members and Manage → Advisors, has one too. It copies a link you can send yourself; the panel also has **WhatsApp** and **Email it yourself** buttons that open a ready-written message.
 - **It works alongside the emailed link.** Pressing **New link** replaces only the previously copied link; the emailed link keeps working. **Resend** gives a new emailed link and also cancels any copied one. **Revoke** stops both.
 - **Expiry:** copying a link for an expired invitation gives it a fresh expiry.
 - **What the person sees:** because you delivered the link personally, they skip the emailed-code step. They open it, set their own password and land in the platform. Send it only to the person it's for.
@@ -89,6 +89,7 @@ Advisors have their own section at the top of Manage, next to Cohorts, so they'r
   2. Tick the cohorts they'll advise, then press **Continue** to see what will happen in each cohort.
   3. Press **Send invitation**: a new person gets one invitation and joins every ticked cohort when they accept. If they already have an account, press **Add now** instead; they're added immediately and emailed.
 - **Add several at once:** choose a cohort and paste one per line (`Name, email`).
+- **Removing advisors:** **×** on a cohort removes them from that cohort; **Remove advisor** removes them from every cohort you manage. Either way their access ends immediately, and they get an email saying they've been removed, thanking them and inviting them to reply if they think it was a mistake. Replies go to the cohort's support email. Their account and history are kept, and other cohorts they still advise aren't affected. Removing an advisor on the Members page sends the same email. Advisors with upcoming appointments must have those cancelled first.
 - **Pending advisor invitations** for all your cohorts are listed at the bottom, with Resend, Revoke and View email.
 
 What advisors see:

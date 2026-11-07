@@ -12,7 +12,7 @@ Date: 2026-10-02. Environment: cloud dev container, Node 22.22, Postgres 16.10 (
 |---|---|
 | `npm run lint` | ✅ 0 problems |
 | `npm run typecheck` | ✅ 0 errors |
-| `npm test` (Vitest + real Postgres) | ✅ 12 files, 60 tests passed (latest run) |
+| `npm test` (Vitest + real Postgres) | ✅ 12 files, 63 tests passed (latest run) |
 | `npm run build` | ✅ succeeded (all platform routes dynamic; marketing pages static) |
 | `npm run e2e` against `npm run dev` | ✅ 18/18 steps |
 | `npm run e2e` against the **production build** (`npm run start`) | ✅ 18/18 steps |
@@ -195,6 +195,19 @@ Fixed in this pass:
   - outsiders are refused.
 - `npm test`: 12 files, 60 tests passed.
 - `npm run e2e`: 20/20. The cofounder now joins through a copied link and goes straight to choosing a password.
+
+## Invite links right away; removal emails (2026-11-07)
+
+- Founder and cofounder invitations, and new advisors, show **Copy invite link** immediately after confirming.
+- Removing an advisor (one cohort, or **Remove advisor** for all cohorts you manage) emails them with a "reply if this was a mistake" note. One email covers several cohorts.
+- Tests:
+  - removing from one cohort sends one email that says other cohorts are unaffected; removing from all sends one email listing every cohort;
+  - admins only remove advisors from their own cohorts, and founders are refused;
+  - a new advisor's invitation ID is returned so the link can be copied.
+- `npm test`: 12 files, 63 tests passed.
+- `npm run e2e`: 20/20. New checks:
+  - the copy link appears right after adding an advisor;
+  - removing the advisor from Spring sends the removal email with the mistake note, and Spring disappears from the advisor's area.
 
 ## Acceptance matrix
 

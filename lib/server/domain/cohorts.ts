@@ -4,10 +4,11 @@ import { programWeeks, isValidTimezone, isIsoDate } from "@/lib/time";
 import { email, requiredText, text } from "@/lib/validation";
 import { audit } from "../audit";
 import { cohortAccess, mapCohort, requireCohortAdmin, type Cohort, type CohortStatus } from "../authz";
-import { sql, tx } from "../db";
+import { sql, tx, type Tx } from "../db";
 import { conflict, forbidden, invalid, notFound } from "../errors";
 import type { Account } from "../session";
 import { parse } from "./validate";
+import { queueAdvisorRemoved } from "./advisor-notices";
 
 const settingsSchema = z.object({
   name: requiredText(160, "Name"),
@@ -128,24 +129,33 @@ export async function listCohortRoles(cohortId: string) {
 
 export async function revokeCohortRole(actor: Account, cohortId: string, roleId: string) {
   return tx(async (t) => {
-    await requireCohortAdmin(actor, cohortId, t);
-    const [r] = await t`select * from cohort_roles where id = ${roleId} and cohort_id = ${cohortId} and active for update`;
-    if (!r) throw notFound("That role was already removed.");
-    if (r.role === "admin" && !actor.isOwner) throw forbidden("Only platform owners can remove cohort administrators.");
-    if (r.role === "mentor") {
-      const future = await t`select id from appointment_bookings where mentor_account_id = ${r.account_id} and cohort_id = ${cohortId}
-                             and state = 'confirmed' and starts_at > now() limit 1`;
-      if (future.length)
-        throw conflict("This mentor still has upcoming appointments in this cohort. Cancel those appointments (with a reason) first, then remove the mentor.");
-      // Stop offering their slots to this cohort immediately.
-      await t`delete from appointment_slot_cohorts sc using appointment_slots s
-              where sc.slot_id = s.id and s.mentor_account_id = ${r.account_id} and sc.cohort_id = ${cohortId}`;
-      await t`delete from availability_rule_cohorts rc using mentor_availability_rules m
-              where rc.rule_id = m.id and m.mentor_account_id = ${r.account_id} and rc.cohort_id = ${cohortId}`;
-    }
-    await t`update cohort_roles set active = false, revoked_at = now(), revoked_by = ${actor.id} where id = ${roleId}`;
-    await audit(t, { actorId: actor.id, action: "role.revoke", objectType: "cohort_role", objectId: roleId, cohortId, summary: { role: r.role, account: r.account_id } });
+    const r = await revokeRoleIn(t, actor, cohortId, roleId);
+    // Removed advisors are told, with a way to say it was a mistake.
+    if (r.role === "mentor") await queueAdvisorRemoved(t, actor, r.account_id, [cohortId]);
+    return r;
   });
+}
+
+/** Revoke one active cohort role inside the caller's transaction. */
+export async function revokeRoleIn(t: Tx, actor: Account, cohortId: string, roleId: string) {
+  await requireCohortAdmin(actor, cohortId, t);
+  const [r] = await t`select * from cohort_roles where id = ${roleId} and cohort_id = ${cohortId} and active for update`;
+  if (!r) throw notFound("That role was already removed.");
+  if (r.role === "admin" && !actor.isOwner) throw forbidden("Only platform owners can remove cohort administrators.");
+  if (r.role === "mentor") {
+    const future = await t`select id from appointment_bookings where mentor_account_id = ${r.account_id} and cohort_id = ${cohortId}
+                           and state = 'confirmed' and starts_at > now() limit 1`;
+    if (future.length)
+      throw conflict("This mentor still has upcoming appointments in this cohort. Cancel those appointments (with a reason) first, then remove the mentor.");
+    // Stop offering their slots to this cohort immediately.
+    await t`delete from appointment_slot_cohorts sc using appointment_slots s
+            where sc.slot_id = s.id and s.mentor_account_id = ${r.account_id} and sc.cohort_id = ${cohortId}`;
+    await t`delete from availability_rule_cohorts rc using mentor_availability_rules m
+            where rc.rule_id = m.id and m.mentor_account_id = ${r.account_id} and rc.cohort_id = ${cohortId}`;
+  }
+  await t`update cohort_roles set active = false, revoked_at = now(), revoked_by = ${actor.id} where id = ${roleId}`;
+  await audit(t, { actorId: actor.id, action: "role.revoke", objectType: "cohort_role", objectId: roleId, cohortId, summary: { role: r.role, account: r.account_id } });
+  return r as { role: string; account_id: string };
 }
 
 /** Gate for the Manage area: platform owners or anyone holding an active admin role. */

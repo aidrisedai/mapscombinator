@@ -114,7 +114,8 @@ export type TemplateName =
   | "booking_rescheduled"
   | "cohort_added"
   | "custom"
-  | "verification_code";
+  | "verification_code"
+  | "advisor_removed";
 
 type P = Record<string, string | null | undefined>;
 
@@ -142,6 +143,16 @@ export function render(template: TemplateName, p: P, s: P = {}): Rendered {
         ],
         p.support,
       );
+    case "advisor_removed": {
+      const many = Number(p.count ?? "1") > 1;
+      return compose(`Update on your mentor / advisor role at ${org}`, org, [
+        { p: `Hi ${p.name ?? "there"},` },
+        { p: `We wanted to let you know that you've been removed as a mentor / advisor for ${p.cohorts} at ${org}. You no longer have access to ${many ? "these cohorts" : "this cohort"} on the platform, and founders there can no longer book you.` },
+        { p: "Thank you for the time and support you gave our founders." },
+        { p: `If you think this was a mistake, just reply to this email${p.support ? ` or write to ${p.support}` : ""} and let us know. We'll sort it out.` },
+        ...(p.stillActive ? [{ small: "Your account and any other cohorts you still advise are not affected." }, { button: { label: "Open the platform", url: p.url ?? "" } }] : []),
+      ], p.support);
+    }
     case "verification_code":
       return compose(`Your ${org} verification code`, org, [
         { p: `Use this code to confirm your email and finish setting up your ${org} account${p.cohort ? ` for ${p.cohort}` : ""}:` },
