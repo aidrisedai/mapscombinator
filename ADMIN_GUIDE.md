@@ -33,6 +33,12 @@ Cohort → **Office hours** → **Add session**. For a weekly series, tick *Repe
 
 To change one date, edit it with *This occurrence*. To change all remaining dates, choose *This and future occurrences*; past sessions are never changed. **Cancel** keeps the session visible as cancelled, and offers a cancellation email (pre-checked if that session was emailed before).
 
+## Sending an invite link yourself
+Every pending invitation, on a startup's page, Members and Manage → Advisors, has a **Copy invite link** button. It copies a link you can send yourself; the panel also has **WhatsApp** and **Email it yourself** buttons that open a ready-written message.
+- **It works alongside the emailed link.** Pressing **New link** replaces only the previously copied link; the emailed link keeps working. **Resend** gives a new emailed link and also cancels any copied one. **Revoke** stops both.
+- **Expiry:** copying a link for an expired invitation gives it a fresh expiry.
+- **What the person sees:** because you delivered the link personally, they skip the emailed-code step. They open it, set their own password and land in the platform. Send it only to the person it's for.
+
 ## How invited people set up their account
 1. They open the link in their acceptance or invitation email.
 2. **Step 1, confirm your email:** they press **Email me a code** and enter the 6-digit code sent to the invited address. Codes expire after 10 minutes, only the newest one works, and 5 wrong tries end that code. **Send a new code** is available after 30 seconds, up to 5 codes per 15 minutes.

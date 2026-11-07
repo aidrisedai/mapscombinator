@@ -120,7 +120,7 @@ function PreviewPanel({ preview, pending, error, onConfirm, onCancel }: { previe
 function SentNotice({ to }: { to: string }) {
   return (
     <p role="status" className="mt-3 rounded-md border border-emerald/40 bg-emerald/5 px-3 py-2 text-sm text-success">
-      Invitation queued for {to}. Its status below changes once the email provider accepts it; that is not proof it reached the inbox.
+      Invitation queued for {to}. To send it yourself (WhatsApp, text, your own email), use “Copy invite link” in the invitations list.
     </p>
   );
 }

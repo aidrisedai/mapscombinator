@@ -12,7 +12,7 @@ Date: 2026-10-02. Environment: cloud dev container, Node 22.22, Postgres 16.10 (
 |---|---|
 | `npm run lint` | ✅ 0 problems |
 | `npm run typecheck` | ✅ 0 errors |
-| `npm test` (Vitest + real Postgres) | ✅ 12 files, 58 tests passed (latest run) |
+| `npm test` (Vitest + real Postgres) | ✅ 12 files, 60 tests passed (latest run) |
 | `npm run build` | ✅ succeeded (all platform routes dynamic; marketing pages static) |
 | `npm run e2e` against `npm run dev` | ✅ 18/18 steps |
 | `npm run e2e` against the **production build** (`npm run start`) | ✅ 18/18 steps |
@@ -184,6 +184,17 @@ Fixed in this pass:
   - founders seeing the advisor on the home page and the Advisors tab;
   - the advisor seeing Teams & progress on the cohort home.
 - Crawl as owner, founder and mentor, at 1280 px and 390 px: 316 page loads, 0 problems.
+
+## Copyable invite links (2026-11-07)
+
+- Migration `010` adds a second, separate shared-link token per invitation. **Copy invite link** is shown on every pending invitation, with Copy, WhatsApp and "Email it yourself" options.
+- Tests:
+  - the shared and emailed links both open the invitation; only the shared one skips the code step;
+  - a new copied link replaces the old one; Resend clears it; Revoke blocks it;
+  - an expired invitation gets a fresh expiry;
+  - outsiders are refused.
+- `npm test`: 12 files, 60 tests passed.
+- `npm run e2e`: 20/20. The cofounder now joins through a copied link and goes straight to choosing a password.
 
 ## Acceptance matrix
 

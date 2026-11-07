@@ -83,7 +83,7 @@ export default async function StartupDetailPage({ params, searchParams }: { para
                     {active && writable && !hasAccess && (
                       <InviteContactButton cohortId={cohort.id} enrollmentId={e.id} name={c.name as string} email={c.email as string} canInvite={!pending} autoOpen={inviteTarget?.id === c.id} />
                     )}
-                    {!hasAccess && pending && <p className="text-xs text-ink/60">Use Resend under Invitations if they need a new link.</p>}
+                    {!hasAccess && pending && <p className="text-xs text-ink/60">Use “Copy invite link” under Invitations to send it yourself, or Resend for a new email.</p>}
                   </li>
                 );
               })}
