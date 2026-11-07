@@ -34,7 +34,7 @@ export async function acceptWithNewAccount(token: string, input: { displayName: 
   const v = parse(newAccountSchema, input);
   const inv = await lookupInvitation(token);
   if (!inv || inv.status !== "open") throw forbidden("This invitation is no longer valid.");
-  if (needsEmailCode(inv.role) && !(await invitationEmailVerified(inv.id)))
+  if (needsEmailCode(inv.role) && !inv.viaSharedLink && !(await invitationEmailVerified(inv.id)))
     throw forbidden("Confirm your email with the code we send you before choosing a password.");
   const [existing] = await sql()`select id from accounts where email = ${inv.email}`;
   if (existing) throw new AppError("conflict", "An account already exists for this email. Sign in to accept the invitation.");

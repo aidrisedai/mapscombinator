@@ -98,3 +98,43 @@ describe("emails held back by test mode", () => {
     expect(await blockedByTestMode(w.C.id)).toEqual({ invitations: 0, emails: 0 });
   });
 });
+
+describe("copyable invite link", () => {
+  it("gives admins a link to send themselves, alongside the emailed one, without the code step", async () => {
+    const w = await invited();
+    const { copyInvitationLink, lookupInvitation, revokeInvitation } = await import("@/lib/server/domain/invitations");
+    const first = await copyInvitationLink(w.owner, w.id);
+    expect(first.email).toBe(w.email);
+    const shared = first.link.split("#")[1];
+    expect(first.link).toMatch(/\/accept-invitation#/);
+    // Both the emailed link and the copied link open the same invitation.
+    expect((await lookupInvitation(w.token))?.viaSharedLink).toBe(false);
+    expect(await lookupInvitation(shared)).toMatchObject({ id: w.id, viaSharedLink: true, status: "open" });
+    // The person still chooses their own password; the code step isn't required on the shared link.
+    const err = await acceptWithNewAccount(shared, { displayName: "Ana", password: "short", confirm: "short" }, ip()).catch((e) => e);
+    expect(String(err?.message)).not.toMatch(/Confirm your email/);
+    await expect(acceptWithNewAccount(w.token, { displayName: "Ana", password: "correct horse battery", confirm: "correct horse battery" }, ip())).rejects.toThrow(/Confirm your email/);
+    // A new copied link replaces the previous copied one only.
+    const second = await copyInvitationLink(w.owner, w.id);
+    expect(await lookupInvitation(shared)).toBeNull();
+    expect(await lookupInvitation(second.link.split("#")[1])).toMatchObject({ id: w.id });
+    expect(await lookupInvitation(w.token)).toMatchObject({ id: w.id });
+    // Expired invitations are given a fresh expiry; revoked ones refuse.
+    await sql()`update invitations set expires_at = now() - interval '1 day', state = 'expired' where id = ${w.id}`;
+    const third = await copyInvitationLink(w.owner, w.id);
+    expect((await lookupInvitation(third.link.split("#")[1]))?.status).toBe("open");
+    await revokeInvitation(w.owner, w.id);
+    await expect(copyInvitationLink(w.owner, w.id)).rejects.toThrow(/revoked/);
+    expect((await lookupInvitation(third.link.split("#")[1]))?.status).toBe("revoked");
+  });
+
+  it("only the invitation's administrators can get its link; Resend clears a copied link", async () => {
+    const w = await invited();
+    const { copyInvitationLink, lookupInvitation } = await import("@/lib/server/domain/invitations");
+    const outsider = await account(await org());
+    await expect(copyInvitationLink(outsider, w.id)).rejects.toThrow();
+    const link = (await copyInvitationLink(w.owner, w.id)).link.split("#")[1];
+    await resendInvitation(w.owner, w.id);
+    expect(await lookupInvitation(link)).toBeNull();
+  });
+});

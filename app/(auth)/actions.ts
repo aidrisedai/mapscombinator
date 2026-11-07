@@ -110,8 +110,8 @@ export async function inspectInvitationAction(fd: FormData): Promise<InvitationI
     viewer: !viewerEmail ? "none" : viewerEmail === inv.email ? "match" : "mismatch",
     viewerEmail,
     accountExists: Boolean(existing),
-    needsCode: needsEmailCode(inv.role),
-    emailVerified: inv.status === "open" && needsEmailCode(inv.role) ? await invitationEmailVerified(inv.id) : false,
+    needsCode: needsEmailCode(inv.role) && !inv.viaSharedLink,
+    emailVerified: inv.status === "open" && needsEmailCode(inv.role) && !inv.viaSharedLink ? await invitationEmailVerified(inv.id) : false,
   };
 }
 

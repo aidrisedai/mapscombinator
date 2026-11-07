@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { act, obj, str } from "@/lib/server/action";
 import { removeOwner, setAccountState } from "@/lib/server/domain/accounts";
 import { createCohort, revokeCohortRole, transitionCohort, updateCohortSettings, type CohortSettingsInput } from "@/lib/server/domain/cohorts";
-import { createInvitation, previewInvitation, resendBlockedByTestMode, resendInvitation, retryCohortEmail, revokeInvitation, type InviteInput } from "@/lib/server/domain/invitations";
+import { copyInvitationLink, createInvitation, previewInvitation, resendBlockedByTestMode, resendInvitation, retryCohortEmail, revokeInvitation, type InviteInput } from "@/lib/server/domain/invitations";
 import { updateOrganization } from "@/lib/server/domain/organization";
 import { addContact, createStartup, getReturnableStartup, removeMembership, updateStartupProfile, withdrawEnrollment } from "@/lib/server/domain/startups";
 import { addLinkResource, publishWeek, removeResource, saveWeekDraft, unpublishWeek } from "@/lib/server/domain/weeks";
@@ -207,6 +207,10 @@ export async function removeResourceAction(fd: FormData) {
 
 export async function retryEmailAction(fd: FormData) {
   return act((actor) => retryCohortEmail(actor, str(fd, "cohortId"), str(fd, "outboxId")));
+}
+
+export async function copyInvitationLinkAction(fd: FormData) {
+  return act((actor) => copyInvitationLink(actor, str(fd, "invitationId")));
 }
 
 export async function resendBlockedAction(fd: FormData) {

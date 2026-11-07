@@ -98,7 +98,7 @@ async function issue(t: Tx, actor: Account | null, invitationId: string, sendNum
   const org = (await getOrganization(t, inv.organization_id))!;
   const token = newToken();
   const expiresAt = new Date(Date.now() + org.invitationValidDays * 86400_000);
-  await t`update invitations set token_hash = ${sha256(token)}, expires_at = ${expiresAt}, state = 'queued', delivery_state = 'queued',
+  await t`update invitations set token_hash = ${sha256(token)}, manual_token_hash = null, expires_at = ${expiresAt}, state = 'queued', delivery_state = 'queued',
           send_count = ${sendNumber} where id = ${invitationId}`;
   const ctx = {
     org: org.name,
@@ -186,6 +186,30 @@ export async function revokeInvitation(actor: Account, invitationId: string) {
   });
 }
 
+/**
+ * A link the administrator copies and sends themselves. It works alongside
+ * the emailed link; getting a new one replaces the previously copied link.
+ * The person still sets up their own password; because the administrator
+ * delivered the link personally, the emailed code step is skipped.
+ */
+export async function copyInvitationLink(actor: Account, invitationId: string) {
+  if (!isUuid(invitationId)) throw notFound("Invitation not found.");
+  return tx(async (t) => {
+    const inv = await loadForManage(t, actor, invitationId);
+    if (inv.state === "accepted") throw conflict("This invitation was already accepted. The person can sign in, or reset their password from the sign-in page.");
+    if (inv.state === "revoked") throw conflict("This invitation was revoked. Create a new invitation instead.");
+    const org = (await getOrganization(t, inv.organization_id))!;
+    const token = newToken();
+    const expired = new Date(inv.expires_at) < new Date() || inv.state === "expired";
+    await t`update invitations set manual_token_hash = ${sha256(token)}, manual_link_at = now(),
+              expires_at = case when ${expired} then now() + make_interval(days => ${org.invitationValidDays}) else expires_at end,
+              state = case when state = 'expired' then 'sent' else state end
+            where id = ${invitationId}`;
+    await audit(t, { actorId: actor.id, action: "invitation.link_copied", objectType: "invitation", objectId: invitationId, cohortId: inv.cohort_id });
+    return { link: `${env().APP_URL}/accept-invitation#${token}`, email: inv.email as string };
+  });
+}
+
 export type InvitationView = {
   id: string;
   email: string;
@@ -200,6 +224,8 @@ export type InvitationView = {
   expiresAt: Date;
   timezone: string;
   support: string | null;
+  /** Opened through a link an administrator copied and sent personally. */
+  viaSharedLink: boolean;
 };
 
 /** Read-only lookup for the acceptance page. GET never consumes a token. */
@@ -213,7 +239,7 @@ export async function lookupInvitation(token: string, db: Db = sql()): Promise<I
     left join enrollments e on e.id = i.enrollment_id
     left join startups s on s.id = e.startup_id
     left join accounts a on a.id = i.invited_by
-    where i.token_hash = ${sha256(token)}`;
+    where i.token_hash = ${sha256(token)} or i.manual_token_hash = ${sha256(token)}`;
   if (!i) return null;
   let status: InvitationView["status"] = "open";
   if (i.state === "accepted") status = "accepted";
@@ -233,6 +259,7 @@ export async function lookupInvitation(token: string, db: Db = sql()): Promise<I
     expiresAt: new Date(i.expires_at),
     timezone: i.timezone ?? "America/Los_Angeles",
     support: i.cohort_support ?? i.org_support,
+    viaSharedLink: i.manual_token_hash === sha256(token),
   };
 }
 
@@ -241,7 +268,7 @@ export async function lookupInvitation(token: string, db: Db = sql()): Promise<I
  * account's verified email must equal the invited address.
  */
 export async function consumeInvitation(t: Tx, token: string, account: { id: string; email: string; organizationId: string }) {
-  const [inv] = await t`select * from invitations where token_hash = ${sha256(token)} for update`;
+  const [inv] = await t`select * from invitations where token_hash = ${sha256(token)} or manual_token_hash = ${sha256(token)} for update`;
   if (!inv) throw notFound("This invitation link isn't valid.");
   if (inv.organization_id !== account.organizationId) throw forbidden("This invitation belongs to a different organization.");
   if (inv.email !== account.email) throw forbidden("This invitation was sent to a different email address.");
@@ -303,7 +330,7 @@ export function landingFor(row: Record<string, unknown>) {
 
 /** Expired/revoked link holders can ask for a new invite. Creates no access. */
 export async function requestNewInvitation(token: string) {
-  const [inv] = await sql()`select id from invitations where token_hash = ${sha256(token)} and state <> 'accepted'`;
+  const [inv] = await sql()`select id from invitations where (token_hash = ${sha256(token)} or manual_token_hash = ${sha256(token)}) and state <> 'accepted'`;
   if (!inv) return;
   const [open] = await sql()`select 1 from invitation_help_requests where invitation_id = ${inv.id} and handled_at is null`;
   if (!open) await sql()`insert into invitation_help_requests (invitation_id) values (${inv.id})`;
@@ -312,7 +339,7 @@ export async function requestNewInvitation(token: string) {
 export async function listInvitations(cohortId: string, enrollmentId?: string) {
   return sql()`
     select i.id, i.email, i.invitee_name, i.role, i.state, i.delivery_state, i.created_at, i.expires_at, i.last_sent_at, i.send_count,
-           i.accepted_at, i.enrollment_id,
+           i.accepted_at, i.enrollment_id, i.manual_link_at, (select c.name from cohorts c where c.id = i.cohort_id) as cohort_name,
            (select count(*)::int from invitation_help_requests h where h.invitation_id = i.id and h.handled_at is null) as help_requests,
            (select o.last_error from email_outbox o where o.related_type = 'invitation' and o.related_id = i.id order by o.created_at desc limit 1) as last_error,
            (select o.id from email_outbox o where o.related_type = 'invitation' and o.related_id = i.id and o.template = 'invitation' order by o.created_at desc limit 1) as latest_email_id,

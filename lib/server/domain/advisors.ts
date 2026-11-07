@@ -258,7 +258,7 @@ export async function listAllAdvisors(actor: Account, cohortFilter?: string | nu
     order by a.display_name`;
   const pending = await sql()`
     select i.id, i.email, i.invitee_name, i.role, i.state, i.delivery_state, i.created_at, i.expires_at, i.last_sent_at, i.send_count,
-           i.accepted_at, i.enrollment_id, i.cohort_id, c.name as cohort_name,
+           i.accepted_at, i.enrollment_id, i.cohort_id, c.name as cohort_name, i.manual_link_at,
            (select count(*)::int from invitation_help_requests h where h.invitation_id = i.id and h.handled_at is null) as help_requests,
            (select o.last_error from email_outbox o where o.related_type = 'invitation' and o.related_id = i.id order by o.created_at desc limit 1) as last_error,
            (select o.id from email_outbox o where o.related_type = 'invitation' and o.related_id = i.id and o.template = 'invitation' order by o.created_at desc limit 1) as latest_email_id

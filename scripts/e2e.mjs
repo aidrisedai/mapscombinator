@@ -254,10 +254,18 @@ try {
     await owner.getByLabel(/^Email/).last().fill(cofounderEmail);
     await owner.getByRole("button", { name: /Preview invitation/ }).last().click();
     await owner.getByRole("button", { name: /Confirm and send/ }).click();
-    const m = await waitForMail(cofounderEmail, "accepted into");
+    await waitForMail(cofounderEmail, "accepted into");
+    // Instead of the email, the admin copies the invite link and sends it personally.
+    await owner.getByRole("button", { name: "Copy invite link" }).first().click();
+    const linkBox = owner.getByLabel(`Invite link for ${cofounderEmail}`);
+    await linkBox.waitFor();
+    const copied = await linkBox.inputValue();
+    if (!copied.includes("/accept-invitation#")) throw new Error("no invite link shown");
+    await shot(owner, "08b-copy-invite-link");
     const co = await newPage();
-    await co.goto(linkIn(m));
-    await confirmEmailCode(co, cofounderEmail);
+    await co.goto(copied);
+    // A link delivered personally by the admin goes straight to choosing a password.
+    await co.getByLabel(/^Your name/).waitFor();
     await co.getByLabel(/^Your name/).fill("Cole Cofounder");
     await co.getByLabel(/^Password/).fill(PW);
     await co.getByLabel(/^Confirm password/).fill(PW);

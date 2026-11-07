@@ -4,6 +4,7 @@ import { Badge, type BadgeTone } from "@/components/ui/primitives";
 import { invitationStatusLabel } from "@/lib/server/domain/invitations";
 import { formatInstant } from "@/lib/time";
 import { resendInvitationAction, revokeInvitationAction } from "../actions";
+import { CopyInviteLink } from "./CopyInviteLink";
 import { ROLE_LABEL } from "./roles";
 
 type Row = Record<string, unknown>;
@@ -41,6 +42,7 @@ export function InvitationList({ rows, timezone, showRole = false, canManage = (
                 {i.last_sent_at ? ` · Last accepted by email provider ${formatInstant(i.last_sent_at as Date, timezone)}` : ""}
                 {i.accepted_at ? ` · Accepted ${formatInstant(i.accepted_at as Date, timezone)}` : open ? ` · Link expires ${formatInstant(i.expires_at as Date, timezone)}` : ""}
                 {` · Sent ${i.send_count as number} ${(i.send_count as number) === 1 ? "time" : "times"}`}
+                {i.manual_link_at ? ` · Link copied ${formatInstant(i.manual_link_at as Date, timezone)}` : ""}
               </p>
               {open && i.last_error ? <p className="text-xs text-error">Last delivery note: {i.last_error as string}</p> : null}
               {i.latest_email_id && i.cohort_id ? (
@@ -50,7 +52,9 @@ export function InvitationList({ rows, timezone, showRole = false, canManage = (
               ) : null}
             </div>
             {open && canManage(i) && (
-              <div className="flex shrink-0 flex-wrap gap-2">
+              <div className="flex shrink-0 flex-col items-stretch gap-2 sm:max-w-sm sm:items-end">
+                <CopyInviteLink invitationId={i.id as string} email={i.email as string} name={(i.invitee_name as string | null) ?? null} context={(i.cohort_name as string | undefined) ?? null} />
+                <div className="flex flex-wrap gap-2">
                 <ActionButton
                   action={resendInvitationAction}
                   fields={{ invitationId: i.id as string }}
@@ -66,6 +70,7 @@ export function InvitationList({ rows, timezone, showRole = false, canManage = (
                   variant="danger"
                   confirmMessage={`Revoke the invitation for ${i.email as string}? The link stops working immediately.`}
                 />
+                </div>
               </div>
             )}
           </li>
